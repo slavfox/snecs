@@ -10,7 +10,6 @@ python = "^3.6"
 sphinx = {version = "^2.4.3", optional = true}
 
 [tool.poetry.dev-dependencies]
-black = {version = "^19.10b0", markers = "platform_python_implementation == 'cpython'"}
 mypy = {version = "^0.761", markers = "platform_python_implementation == 'cpython'"}
 flake8 = "^3.7.9"
 flake8-typing-imports = "^1.5.1"
@@ -22,6 +21,7 @@ bump2version = "^1.0.0"
 pre-commit = "^2.1.1"
 flake8-docstrings = "^1.5.0"
 pytest = "^5.3.5"
+black = {version = "^19.10b0", markers = "platform_python_implementation == 'cpython'"}
 
 [tool.poetry.extras]
 docs = ["sphinx"]
@@ -35,8 +35,8 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 79
-
-forced_separate = ["typing"]
+known_third_party = ["snecs"]
+force_to_top = ["typing"]
 
 [tool.flakehell]
 format = "grouped"

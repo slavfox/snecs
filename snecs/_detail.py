@@ -11,9 +11,8 @@ yourself, well... you're absolutely correct.
 
 The names defined here are not part of the public API, and subject to change.
 """
-from abc import ABC, abstractmethod
-
 from typing import TYPE_CHECKING, Any, Mapping, TypeVar, Union
+from abc import ABC, abstractmethod
 
 if TYPE_CHECKING:
     from typing import Generator, Iterable, NoReturn, Iterator

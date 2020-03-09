@@ -3,10 +3,10 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
+from typing import TYPE_CHECKING, Dict
+
 from snecs._detail import ZERO, EntityID
 from snecs.component import Component, _component_registry
-
-from typing import TYPE_CHECKING, Dict
 
 if TYPE_CHECKING:
     from typing import Type

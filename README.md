@@ -1,8 +1,10 @@
 # snecs (work in progress)
 ### A Straightforward, Nimble ECS for Python.
+![GitHub](https://img.shields.io/github/license/slavfox/snecs?style=flat-square)
 
-snecs is a pure-Python [ECS] library, heavily inspired by Rust's [Legion], and
-aiming to be as fast and easy-to-use as possible with pure Python.
+
+snecs is a pure Python, dependency-free [ECS] library, heavily inspired by
+Rust's [Legion], and aiming to be as fast and easy-to-use as possible.
 
 The goal is outrunning [esper].
 
@@ -14,17 +16,15 @@ The goal is outrunning [esper].
   - [ ] Entity cache
   - [ ] Queries
   
-  - [ ] [Legion]-inspired filtering
+  - [ ] [Legion]-inspired filtering and querying
+    - [ ] Filterable queries
     - [x] Filter builder
           
       Allows building arbitrary filters using simple Python syntax, eg.
       ```python
       world.query(Position).filter(Velocity & ~(Frozen | Static))
       ```
-    - [ ] Filter compiler
-    
-      A full-fledged [Quine-McCluskey] logic minimizer, to precompile filters
-      into optimalform, because I hate my life. 
+    - [x] Filter compiler
     
     
 
