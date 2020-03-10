@@ -17,6 +17,6 @@ Indices and tables
 .. automodule:: snecs.component
    :members:
 
-.. automodule:: snecs.world
+.. automodule:: snecs.filters
    :members:
 

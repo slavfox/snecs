@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Mapping, TypeVar, Union
 from abc import ABC, abstractmethod
 
 if TYPE_CHECKING:
-    from typing import Generator, Iterable, NoReturn, Iterator
+    from typing import Generator, Iterable, NoReturn, Iterator, Optional
 
 _IntOrBitmask = Union[int, "Bitmask"]
 
@@ -80,6 +80,11 @@ class Bitmask(int):
         ...
 
     del __or__
+
+    def __invert__(self) -> "Bitmask":
+        ...
+
+    del __invert__
 
 
 class EntityID(int):
@@ -151,7 +156,7 @@ class _Dict:
 # we have `exec("foo = bar")` and locals() / globals(). The latter option is
 # slightly easier to maintain, so I'm choosing that one:
 # Bada bing-
-locals()[_Dict.__name__] = dict
+locals()[_Dict.__name__] = dict  # type: ignore
 # -bada boom.
 #
 # The last thing that needs explanation is that I'm using `_Dict.__name__`
@@ -185,7 +190,9 @@ class InvariantDict(_Dict, Mapping[K, V], ABC):
             f"use .add() instead."
         )
 
-    def update(self, *args: "Any", **kwargs: "Any") -> "NoReturn":
+    def update(  # type: ignore
+        self, *args: "Any", **kwargs: "Any"
+    ) -> "NoReturn":
         raise TypeError(
             f"{self.__class__.__name__} does not support .update(), use "
             f".add() instead."
@@ -196,13 +203,15 @@ class InvariantDict(_Dict, Mapping[K, V], ABC):
             f"{self.__class__.__name__} does not support key removal."
         )
 
-    def setdefault(self, key: "K", default: "V" = None) -> "NoReturn":
+    def setdefault(
+        self, key: "K", default: "Optional[V]" = None
+    ) -> "NoReturn":
         raise TypeError(
             f"{self.__class__.__name__} does not support .setitem(), use "
             f".getitem() instead."
         )
 
-    def pop(self, key: "K", default: "V" = None) -> "NoReturn":
+    def pop(self, key: "K", default: "Optional[V]" = None) -> "NoReturn":
         raise TypeError(f"{self.__class__.__name__} does not support .pop().")
 
     def popitem(self) -> "NoReturn":
@@ -212,7 +221,7 @@ class InvariantDict(_Dict, Mapping[K, V], ABC):
         )
 
     def fromkeys(
-        self, iterable: "Iterable[K]", value: "V" = None
+        self, iterable: "Iterable[K]", value: "Optional[V]" = None
     ) -> "NoReturn":
         raise TypeError(
             f"{self.__class__.__name__} does not support .fromkeys()."
