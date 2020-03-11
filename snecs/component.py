@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, TypeVar
 from abc import ABCMeta
 
 from snecs._detail import Bitmask, InvariantDict
-from snecs.filters import AndExpr, Expr, NotExpr, OrExpr, Term
+from snecs.filters import AndExpr, DynamicExpr, NotExpr, OrExpr, Term
 
 if TYPE_CHECKING:
     from typing import Type
@@ -42,14 +42,14 @@ class ComponentMeta(ABCMeta):
     _bitmask: "Bitmask"
 
     def __and__(self, other: "Term") -> "AndExpr":
-        if isinstance(other, Expr):
-            return other & self
-        return AndExpr(other, self)
+        if isinstance(other, DynamicExpr):
+            return other.__rand__(self)
+        return AndExpr(self, other)
 
     def __or__(self, other: "Term") -> "OrExpr":
-        if isinstance(other, Expr):
-            return other | self
-        return OrExpr(other, self)
+        if isinstance(other, DynamicExpr):
+            return other.__ror__(self)
+        return OrExpr(self, other)
 
     def __invert__(self) -> "NotExpr":
         return NotExpr(self)

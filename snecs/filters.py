@@ -1,10 +1,10 @@
 """
 Query filtering tools.
 """
-from typing import TYPE_CHECKING, TypeVar, Union
-from abc import ABC
+from typing import TYPE_CHECKING, Union
+from abc import ABC, abstractmethod
 from functools import reduce
-from operator import and_, or_
+from operator import and_, inv, or_
 
 from snecs._detail import ZERO, Bitmask
 
@@ -19,12 +19,29 @@ if TYPE_CHECKING:
     # noinspection PyUnresolvedReferences
     from snecs.component import ComponentMeta  # noqa
 
+    _Selector = Bitmask
+    _ValueMask = Bitmask
+    _MatcherCombinerType = Callable[["Matcher", "Matcher"], "Matcher"]
+
 Term = Union["Expr", "ComponentMeta"]
 
-Signature = TypeVar("Signature", bound="Tuple[Term, ...]")
-_Selector = Bitmask
-_ValueMask = Bitmask
-_MatcherCombinerType = Callable[["Matcher", "Matcher"], "Matcher"]
+
+def compile_filter(term: "Term") -> "Callable[[Bitmask], bool]":
+    if isinstance(term, Expr):
+        return term._make_matcher().compile()
+    term_bitmask = term._bitmask
+
+    def match(bitmask: "Bitmask") -> bool:
+        return bool(bitmask & term_bitmask)
+
+    return match
+
+
+def _format_expr_term(term: "Term") -> str:
+    if isinstance(term, Expr):
+        return repr(term)
+    else:
+        return term.__name__
 
 
 class Matcher:
@@ -46,7 +63,7 @@ class Matcher:
         for lselector, lvaluemask in self.clauses:
             for rselector, rvaluemask in other.clauses:
                 # ToDo: I'm pretty sure this has a bug for
-                # Todo: (...|a) & (...|~a).
+                #       (...|a) & (...|~a).
                 new_clauses.append(
                     ((lselector | rselector), (lvaluemask | rvaluemask))
                 )
@@ -56,6 +73,8 @@ class Matcher:
         return Matcher([*self.clauses, *other.clauses])
 
     def __invert__(self) -> "Matcher":
+        # Todo: since (~a & ~b) matches against 00, ~(~a & ~b) matches against
+        #       11. This is extremely wrong.
         return Matcher(
             [(selector, ~valuemask) for selector, valuemask in self.clauses]
         )
@@ -73,6 +92,55 @@ class Matcher:
 
 
 class Expr(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def _make_matcher(self) -> "Matcher":
+        ...
+
+
+class StaticExpr(Expr, ABC):  # noqa: W0223
+    #                           "Method '_make_matcher' is abstract in class
+    #                           'Expr' but is not overridden."
+    #                           A false positive from, to nobody's surprise,
+    #                           pylint. StaticExpr is an abstract class,
+    #                           so it doesn't have to override _make_matcher.
+    __slots__ = ()
+    _retval: "bool" = False
+
+    def __repr__(self) -> "str":
+        return str(self._retval).lower()
+
+
+class _TrueExpr(StaticExpr):
+    __slots__ = ()
+    _retval = True
+
+    def __invert__(self) -> "_FalseExpr":
+        return FalseExpr
+
+    def _make_matcher(self) -> "Matcher":
+        # Anything & 0 == 0
+        return Matcher(clauses=[(Bitmask(0), Bitmask(0))])
+
+
+class _FalseExpr(StaticExpr):
+    __slots__ = ()
+    _retval = False
+
+    def __invert__(self) -> "_TrueExpr":
+        return TrueExpr
+
+    def _make_matcher(self) -> "Matcher":
+        # any([]) == False
+        return Matcher(clauses=[])
+
+
+TrueExpr = _TrueExpr()
+FalseExpr = _FalseExpr()
+
+
+class DynamicExpr(Expr, ABC):
     """
     Base abstract class for filter expressions.
 
@@ -95,20 +163,31 @@ class Expr(ABC):
 
     def __and__(self, other: "Term") -> "AndExpr":
         if isinstance(other, AndExpr):
+            return other.__rand__(self)
+        return AndExpr(self, other)
+
+    def __rand__(self, other: "Term") -> "AndExpr":
+        if isinstance(other, AndExpr):
             return other & self
         return AndExpr(other, self)
 
     def __or__(self, other: "Term") -> "OrExpr":
         if isinstance(other, OrExpr):
-            return other | self
-        return OrExpr(other, self)
+            return other.__ror__(self)
+        return OrExpr(self, other)
 
-    def __invert__(self) -> "NotExpr":
+    def __ror__(self, other: "Term") -> "OrExpr":
+        if isinstance(other, OrExpr):
+            return other | self
+        return OrExpr(self, other)
+
+    def __invert__(self) -> "Term":
         return NotExpr(self)
 
     def __repr__(self) -> "str":
         return (
-            f"({self._operator_repr} {' '.join(repr(t) for t in self.terms)})"
+            f"({self._operator_repr} "
+            f"{' '.join(_format_expr_term(t) for t in self.terms)})"
         )
 
     def _make_matcher_for(self, term: "Term") -> "Matcher":
@@ -123,8 +202,16 @@ class Expr(ABC):
     def _extend_matcher(self, matcher: "Matcher") -> "Matcher":
         return matcher
 
+    def __hash__(self) -> int:
+        return hash((self.__class__, self.terms))
 
-class NotExpr(Expr):
+    def __eq__(self, other: "object") -> bool:
+        return isinstance(other, self.__class__) and set(other.terms) == set(
+            self.terms
+        )
+
+
+class NotExpr(DynamicExpr):
     """
     A "not" expression: `~Term`.
 
@@ -134,7 +221,9 @@ class NotExpr(Expr):
     __slots__ = ()
     _operator_repr = "~"
 
-    def __init__(self, term: "Term") -> "None":
+    def __init__(self, term: "Term") -> "None":  # noqa: W0235
+        # W0235: "Useless super delegation in method '__init__'"
+        # Actually not useless, because NotExpr.__init__ is not variadic.
         super().__init__(term)
 
     def _get_component_matcher(self, term: "ComponentMeta") -> Matcher:
@@ -143,8 +232,11 @@ class NotExpr(Expr):
     def _extend_matcher(self, matcher: "Matcher") -> "Matcher":
         return ~matcher
 
+    def __invert__(self) -> "Term":
+        return self.terms[0]
 
-class MultiExpr(Expr, ABC):
+
+class MultiExpr(DynamicExpr, ABC):
     """
     An abstract base class for 2+-ary expressions, like ``X & Y & Z``.
     """
@@ -165,8 +257,13 @@ class AndExpr(MultiExpr):
 
     def __and__(self, other: "Term") -> "AndExpr":
         if isinstance(other, AndExpr):
-            return AndExpr(*(self.terms + other.terms))
-        return AndExpr(self, other)
+            return AndExpr(*self.terms, *other.terms)
+        return AndExpr(*self.terms, other)
+
+    def __rand__(self, other: "Term") -> "AndExpr":
+        if isinstance(other, AndExpr):
+            return AndExpr(*other.terms, *self.terms)
+        return AndExpr(other, *self.terms)
 
 
 class OrExpr(MultiExpr):
@@ -182,5 +279,16 @@ class OrExpr(MultiExpr):
 
     def __or__(self, other: "Term") -> "OrExpr":
         if isinstance(other, OrExpr):
-            return OrExpr(*(self.terms + other.terms))
-        return OrExpr(self, other)
+            return OrExpr(*self.terms, *other.terms)
+        return OrExpr(*self.terms, other)
+
+    def __ror__(self, other: "Term") -> "OrExpr":
+        if isinstance(other, AndExpr):
+            return OrExpr(*other.terms, *self.terms)
+        return OrExpr(other, *self.terms)
+
+    # noinspection PyUnboundLocalVariable
+    def __invert__(self) -> "AndExpr":
+        inv: "Callable[[Term], Term]"  # noqa: W0621
+        # De Morgan's 2nd law
+        return AndExpr(*map(inv, self.terms))

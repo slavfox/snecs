@@ -84,3 +84,6 @@ $(VENV_SITE_PACKAGES)/%:
 
 docs: $(VENV_SITE_PACKAGES)/sphinx
 	cd docs && make html
+
+test: $(VENV_SITE_PACKAGES)/pytest
+	pytest --cov=$(SRC_DIR) --cov-report html tests

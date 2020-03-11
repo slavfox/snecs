@@ -42,10 +42,9 @@ class Bitmask(int):
     # my machine. That's the last thing we want when we're already using
     # bitmasks for performance!
     #
-    # So, here's where the ugly hack comes in. Mypy ignores `del`s,
-    # so we let it know that `Bitmask(0b10) | 0b01` is still a valid
-    # Bitmask, but we immediately delete the definition right afterwards -
-    # so that at runtime, this entire class body is just::
+    # So, here's where the ugly hack comes in. We let Mypy know that
+    # `Bitmask(0b10) | 0b01` is still a valid Bitmask, but at runtime, this
+    # entire class body is just::
     #
     #     class Bitmask(int):
     #         pass
@@ -56,35 +55,37 @@ class Bitmask(int):
     # naked `int` into a function expecting a Bitmask.
     #
     # Yay.
-    def __lshift__(self, other: "int") -> "Bitmask":
-        ...
+    if TYPE_CHECKING:
 
-    del __lshift__
+        def __lshift__(self, other: "int") -> "Bitmask":
+            ...
 
-    def __rshift__(self, other: "int") -> "Bitmask":
-        ...
+        del __lshift__
 
-    del __rshift__
+        def __rshift__(self, other: "int") -> "Bitmask":
+            ...
 
-    def __and__(self, other: "_IntOrBitmask") -> "Bitmask":
-        ...
+        del __rshift__
 
-    del __and__
+        def __and__(self, other: "_IntOrBitmask") -> "Bitmask":
+            ...
 
-    def __xor__(self, other: "_IntOrBitmask") -> "Bitmask":
-        ...
+        del __and__
 
-    del __xor__
+        def __xor__(self, other: "_IntOrBitmask") -> "Bitmask":
+            ...
 
-    def __or__(self, other: "_IntOrBitmask") -> "Bitmask":
-        ...
+        del __xor__
 
-    del __or__
+        def __or__(self, other: "_IntOrBitmask") -> "Bitmask":
+            ...
 
-    def __invert__(self) -> "Bitmask":
-        ...
+        del __or__
 
-    del __invert__
+        def __invert__(self) -> "Bitmask":
+            ...
+
+        del __invert__
 
 
 class EntityID(int):
@@ -94,15 +95,17 @@ class EntityID(int):
 
     __slots__ = ()
 
-    def __add__(self, other: "int") -> "EntityID":
-        ...
+    if TYPE_CHECKING:
 
-    del __add__
+        def __add__(self, other: "int") -> "EntityID":
+            ...
 
-    def __iadd__(self, other: "int") -> "EntityID":
-        ...
+        del __add__
 
-    del __iadd__
+        def __iadd__(self, other: "int") -> "EntityID":
+            ...
+
+        del __iadd__
 
 
 def bits(bitmask: "Bitmask") -> "Generator[Bitmask, None, None]":
@@ -115,59 +118,38 @@ def bits(bitmask: "Bitmask") -> "Generator[Bitmask, None, None]":
 
 ZERO = Bitmask(0)
 
+if TYPE_CHECKING:
 
-class _Dict:
-    """Dict, but ignored by mypy."""
+    class _Dict:
+        """Dict, but ignored by mypy."""
 
-    # Definition intentionally left blank.
-    #
-    # ...wait, what?
-    #
-    # Yup. Hello. This is, quite possibly, one of the worst hacks I've done
-    # in my life. If you're reading this, I'm so sorry.
-    #
-    # Here's the problem:
-    # I want InvariantDict to keep the native dict performance, so it has to
-    # inherit from dict. At the same time, calling most normal dict methods on
-    # an InvariantDict is not valid, and I'd like the type system to reflect
-    # this.
-    # Ideally, I'd like to mark InvariantDict as a subtype of Mapping,
-    # and not Dict. Unfortunately, you can't subtype X and tell
-    # mypy to *pretend* your class isn't *really* a subtype of X.
+        # Definition intentionally left blank.
+        #
+        # ...wait, what?
+        #
+        # Here's the problem:
+        # I want InvariantDict to keep the native dict performance, so it has
+        # to inherit from dict. At the same time, calling most normal dict
+        # methods on an InvariantDict is not valid, and I'd like the type
+        # system to reflect this.
+        # Ideally, I'd like to mark InvariantDict as a subtype of Mapping,
+        # and not Dict. Unfortunately, you can't subtype X and tell
+        # mypy to *pretend* your class isn't *really* a subtype of X.
+        #
+        # Oh, wait, nevermind. You actually *can*. That's what I'm doing here.
 
 
-# ...Or can you?
-# Welcome to an indentation level down from where we were a moment ago. Turns
-# out that if you try hard enough, you *can* actually fool mypy, using a dirty,
-# dirty hack in the same vein as our earlier `del` trick in Bitmask, a couple
-# lines above.
-#
-# Mypy sees the _Dict above as just an empty class with no bases,
-# so it *won't* override the Mapping we actually want - great! All that's left
-# now is to make Python itself see _Dict not as an empty class, but as... well,
-# dict. To do that while still fooling mypy into not realizing _Dict is `dict`,
-# we have to replace it with `dict` in a way that Mypy doesn't understand.
-# The trivial:
-#
-#   _Dict = dict
-#
-# just wouldn't work, because that is just type aliasing. So, what alternate
-# ways of setting a variable does Python offer? Off the top of my head,
-# we have `exec("foo = bar")` and locals() / globals(). The latter option is
-# slightly easier to maintain, so I'm choosing that one:
-# Bada bing-
-locals()[_Dict.__name__] = dict  # type: ignore
-# -bada boom.
-#
-# The last thing that needs explanation is that I'm using `_Dict.__name__`
-# rather than a string "_Dict", so that there's no risk of forgetting to
-# update the string if the class name ever changes.
+else:
+    _Dict = dict
 
 
 K = TypeVar("K")
 V = TypeVar("V")
 
+a: object = None
 
+
+# noinspection PyNestedDecorators
 class InvariantDict(_Dict, Mapping[K, V], ABC):
     """
     A mapping with auto-assigned keys that rejects mutation other than add().
@@ -207,8 +189,8 @@ class InvariantDict(_Dict, Mapping[K, V], ABC):
         self, key: "K", default: "Optional[V]" = None
     ) -> "NoReturn":
         raise TypeError(
-            f"{self.__class__.__name__} does not support .setitem(), use "
-            f".getitem() instead."
+            f"{self.__class__.__name__} does not support .setdefault(), use "
+            f".get() instead."
         )
 
     def pop(self, key: "K", default: "Optional[V]" = None) -> "NoReturn":
@@ -220,25 +202,33 @@ class InvariantDict(_Dict, Mapping[K, V], ABC):
             f"reversed() instead."
         )
 
+    @classmethod
     def fromkeys(
-        self, iterable: "Iterable[K]", value: "Optional[V]" = None
-    ) -> "NoReturn":
-        raise TypeError(
-            f"{self.__class__.__name__} does not support .fromkeys()."
-        )
+        cls, iterable: "Iterable[K]", value: "Optional[V]" = None
+    ) -> "InvariantDict[K, V]":
+        if value is not None:
+            raise TypeError(
+                f"{cls.__name__} does not support two-argument fromkeys()."
+            )
+        d = cls()
+        for k in iterable:
+            d.add(k)
+        return d
 
     # You already know how this works.
-    def __getitem__(self, item: "K") -> "V":
-        ...
+    if TYPE_CHECKING:
 
-    del __getitem__
+        def __getitem__(self, item: "K") -> "V":
+            ...
 
-    def __iter__(self) -> "Iterator[K]":
-        ...
+        del __getitem__
 
-    del __iter__
+        def __iter__(self) -> "Iterator[K]":
+            ...
 
-    def __len__(self) -> "int":
-        ...
+        del __iter__
 
-    del __len__
+        def __len__(self) -> "int":
+            ...
+
+        del __len__
