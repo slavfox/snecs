@@ -7,13 +7,16 @@
 Base Component classes and the functions necessary to make them work.
 """
 from typing import TYPE_CHECKING, TypeVar
-from abc import ABCMeta
+from abc import ABC, ABCMeta
 
 from snecs._detail import Bitmask, InvariantDict
-from snecs.filters import AndExpr, DynamicExpr, NotExpr, OrExpr, Term
+from snecs.filters import AndExpr, Expr, NotExpr, OrExpr
 
 if TYPE_CHECKING:
-    from typing import Type
+    from typing import Type, Any
+    from snecs.filters import Term
+
+    CType = TypeVar("CType", bound="Component")
 
 __all__ = ["Component", "register_component"]
 
@@ -41,13 +44,17 @@ class ComponentMeta(ABCMeta):
 
     _bitmask: "Bitmask"
 
-    def __and__(self, other: "Term") -> "AndExpr":
-        if isinstance(other, DynamicExpr):
+    def __and__(self, other: "Term") -> "Term":
+        if other is self:
+            return self
+        elif isinstance(other, Expr):
             return other.__rand__(self)
         return AndExpr(self, other)
 
-    def __or__(self, other: "Term") -> "OrExpr":
-        if isinstance(other, DynamicExpr):
+    def __or__(self, other: "Term") -> "Term":
+        if other is self:
+            return self
+        elif isinstance(other, Expr):
             return other.__ror__(self)
         return OrExpr(self, other)
 
@@ -55,7 +62,7 @@ class ComponentMeta(ABCMeta):
         return NotExpr(self)
 
 
-class Component(metaclass=ComponentMeta):
+class Component(ABC, metaclass=ComponentMeta):
     """
     Base Component class.
 
@@ -66,16 +73,49 @@ class Component(metaclass=ComponentMeta):
         class MyComponent(Component):
             ...
 
-    If running in debug mode (without the `-O` flag), snecs will warn
-    about using unregistered components or ones that don't inherit from
-    `Component`.
+    Base and abstract Component classes don't have to be registered, as long as
+    you're not going to instantiate them.
+
+    If you want to use the snecs full-world serialization and make your
+    typing extra tight, you should override `serialize` and `deserialize` in
+    all your registered Components::
+
+        @register_component
+        class IntPairComponent(Component):
+            ...
+            def serialize(self):
+                return (self.first, self.second)
+
+            @classmethod
+            def deserialize(cls, serialized):
+                return cls(*serialized)
     """
 
     _bitmask: "Bitmask"
     __slots__ = ()
 
+    def serialize(self) -> "Any":  # type: ignore
+        """
+        Serialize an instance of this component into a simpler type.
 
-CType = TypeVar("CType", bound=Component)
+        Override this in all your Component classes to make use of snecs'
+        full-World serialization feature.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def deserialize(  # type: ignore
+        cls: "Type[CType]", serialized: "Any"
+    ) -> "CType":
+        """
+        Deserialize a serialized instance of this component.
+
+        Gets the output of `serialize` as an argument.
+
+        Override this in all your Component classes to make use of snecs'
+        full-World serialization feature.
+        """
+        raise NotImplementedError
 
 
 class _ComponentRegistry(InvariantDict["Type[Component]", "Bitmask"]):

@@ -1,4 +1,4 @@
-.PHONY: help lint test doc-deps docs
+.PHONY: help lint test doc-deps docs check
 
 ifdef NOCOLOR
 NC=
@@ -37,14 +37,15 @@ endif
 endif
 
 SRC_DIR=snecs
-TESTS_DIR=
+TESTS_DIR=tests
 DOCS_DIR=
 
 help:
 	@printf "make help         - display this message\n"
 	@printf "make test         - run tests\n"
 	@printf "make lint         - run linters\n"
-	@printf "make docs         - run tests\n"
+	@printf "make check        - run linters AND tests\n"
+	@printf "make docs         - build documentation\n"
 
 # Run all linters (isort, black, flake8, mypy) without early-exiting if
 # any of them fails.
@@ -61,12 +62,12 @@ lint: $(VENV_SITE_PACKAGES)/flake8 $(VENV_SITE_PACKAGES)/isort
 		}; \
 	fi; \
 	printf "$(INFO) Running flake8.$(NC)\n"; \
-	poetry run flake8 $(SRC_DIR) $(TESTS_DIR) $(DOCS_DIR) || { \
+	poetry run flake8 $(SRC_DIR) || { \
 		STATUS=$$?; printf "$(ERROR) flake8 failed.\n"; \
 	}; \
 	if ! [[ -z "$(MYPY_CMD)" ]]; then \
 		printf "$(INFO) Running mypy.$(NC)\n"; \
-	    $(MYPY_CMD) $(SRC_DIR) $(TESTS_DIR) || { \
+	    $(MYPY_CMD) $(SRC_DIR) || { \
 			STATUS=$$?; printf "$(ERROR) mypy failed.\n"; \
 		}; \
 	fi; \
@@ -86,4 +87,6 @@ docs: $(VENV_SITE_PACKAGES)/sphinx
 	cd docs && make html
 
 test: $(VENV_SITE_PACKAGES)/pytest
-	pytest --cov=$(SRC_DIR) --cov-report html tests
+	poetry run pytest --cov=$(SRC_DIR) --cov-report html --tb=short tests
+
+check: lint test

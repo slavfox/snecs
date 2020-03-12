@@ -8,5 +8,11 @@ snecs - the straightforward, nimble ECS for Python.
 
 Remind me to stick a proper docstring here.
 """
+from snecs.component import Component
+from snecs.filters import compile_filter
+from snecs.world import EntityID, World
+
+__all__ = ["World", "EntityID", "compile_filter", "Component"]
+
 __version_info__ = ("0", "0", "0")
 __version__ = ".".join(__version_info__)
