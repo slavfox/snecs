@@ -12,7 +12,7 @@ from snecs._detail import EntityID
 from snecs.component import Component
 
 if TYPE_CHECKING:
-    from typing import Type
+    from typing import Type, Set
     from snecs._detail import Bitmask
 
 __all__ = ["World", "EntityID"]
@@ -23,12 +23,18 @@ class World:
     A container for all your entities, components and systems.
     """
 
-    __slots__ = ("_entity_counter", "_entities", "_entity_bitmasks")
+    __slots__ = (
+        "_entity_counter",
+        "_entities",
+        "_entity_bitmasks",
+        "_entity_cache",
+    )
 
     def __init__(self) -> None:
         self._entity_counter: "EntityID" = EntityID(0)
         self._entities: "Dict[EntityID, Dict[Type[Component], Component]]" = {}
         self._entity_bitmasks: "Dict[EntityID, Bitmask]" = {}
+        self._entity_cache: "Dict[Type[Component], Set[EntityID]]" = {}
 
 
 default_world = World()

@@ -5,9 +5,21 @@ description = "A Straightforward, Nimble ECS for Python"
 authors = ["Slavfox <slavfoxman@gmail.com>"]
 license = "MPL-2.0"
 
+repository = 'https://github.com/slavfox/snecs'
+keywords = ["ECS", "game engine", "gamedev"]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Topic :: Games/Entertainment",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy"
+]
+
 [tool.poetry.dependencies]
 python = "^3.6"
-sphinx = {version = "^2.4.3", optional = true}
 
 [tool.poetry.dev-dependencies]
 mypy = {version = "^0.761", markers = "platform_python_implementation == 'cpython'"}
@@ -23,9 +35,7 @@ flake8-docstrings = "^1.5.0"
 pytest = "^5.3.5"
 black = {version = "^19.10b0", markers = "platform_python_implementation == 'cpython'"}
 pytest-cov = "^2.8.1"
-
-[tool.poetry.extras]
-docs = ["sphinx"]
+sphinx = "^2.4.3"
 
 [tool.black]
 line-length = 79

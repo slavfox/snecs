@@ -139,16 +139,53 @@ def has_component(
     return component_type in world._entities[entity_id]
 
 
-#
-# def delete_entity(
-#     entity_id: "EntityID",
-#     world: "World" = default_world,
-#     now: "bool" = False
-# ) -> "None":
-#     """
-#     Schedule an entity for deletion from the World.
-#
-#     :param entity_id:
-#     :param world:
-#     :param now: If True, delete the entity immediately.
-#     """
+def has_components(
+    entity_id: "EntityID",
+    component_types: "Iterable[Type[Component]]",
+    world: "World" = default_world,
+) -> "bool":
+    """
+    Check if a given entity has all of the specified `Component`s.
+
+    Will throw a KeyError if the entity doesn't exist in this `World`.
+
+    :param entity_id: ID of the entity to check
+    :param component_types: Component type to check
+    :param world: World to check for the entity
+    :return: bool
+    :raises KeyError: If the entity doesn't exist in this `World`.
+    """
+    d = world._entities[entity_id]
+    return all(c in d for c in component_types)
+
+
+def remove_component(
+    entity_id: "EntityID",
+    component_type: "Type[Component]",
+    world: "World" = default_world,
+) -> "None":
+    """
+    Remove a specific `Component` from an entity.
+
+    Will throw a KeyError if the entity doesn't have a Component of the
+    given type, or if the entity doesn't exist in this `World`.
+
+    :param entity_id: ID of the entity to check
+    :param component_type: Component type to check
+    :param world: World to check for the entity
+    :return: bool
+    :raises KeyError: If the entity doesn't exist in this `World` or it
+                      doesn't have the specified component.
+    """
+
+
+def delete_entity(
+    entity_id: "EntityID", world: "World" = default_world, now: "bool" = False
+) -> "None":
+    """
+    Schedule an entity for deletion from the World.
+
+    :param entity_id:
+    :param world:
+    :param now: If True, delete the entity immediately.
+    """

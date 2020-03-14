@@ -10,7 +10,7 @@ from types import new_class
 import pytest
 from snecs._detail import Bitmask
 from snecs.component import Component
-from snecs.filters import AndExpr, NotExpr, OrExpr, compile_filter
+from snecs.filters import AndExpr, NotExpr, OrExpr, compile_filter, matches
 
 
 def make_component_class(name, bitmask) -> Type[Component]:
@@ -140,8 +140,9 @@ def test_complex_expression_builder(expr, expected_terms):
     ],
 )
 def test_matching(expr, bitmask, should_match):
+    assert matches(expr, bitmask) == should_match
     match = compile_filter(expr)
-    assert match.matches(bitmask) == should_match
+    assert match @ bitmask == should_match
 
 
 @pytest.mark.parametrize(

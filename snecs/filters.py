@@ -34,7 +34,8 @@ if TYPE_CHECKING:
     _MatcherCombinerType = Callable[
         ["ExprCompiler", "ExprCompiler"], "ExprCompiler"
     ]
-    _CompiledMatcherType = Callable[[Bitmask], bool]
+    _BoolLike = Union["int", "bool"]
+    _CompiledMatcherType = Callable[[Bitmask], _BoolLike]
 
     T = TypeVar("T")
     Term = Union["Expr", "ComponentMeta"]
@@ -55,7 +56,7 @@ class NonliteralTerm(ABC):
     __slots__ = ()
 
     @abstractmethod
-    def matches(self, bitmask: "Bitmask") -> "bool":
+    def matches(self, bitmask: "Bitmask") -> "_BoolLike":
         ...
 
 
@@ -100,8 +101,10 @@ def compile_filter(term: "Term") -> "CompiledFilter":
     # methods being slowest. Since the external function is the fastest in
     # both cases, that's what we use - but we define an unused first argument
     # to keep the signature correct.
-    def match(_: object, bitmask: "Bitmask") -> bool:
-        return bool(bitmask & term_bitmask)
+    def match(_: object, bitmask: "Bitmask") -> "_BoolLike":
+        # calling bool() on this to hit the fast-path for booleans is not
+        # worth the function call overhead.
+        return bitmask & term_bitmask
 
     class Filter(CompiledFilter):
         __slots__ = ()
@@ -110,7 +113,9 @@ def compile_filter(term: "Term") -> "CompiledFilter":
     return Filter(term.__name__)
 
 
-def matches(term: "Union[Term, CompiledFilter]", bitmask: "Bitmask") -> "bool":
+def matches(
+    term: "Union[Term, CompiledFilter]", bitmask: "Bitmask"
+) -> "_BoolLike":
     """
     Check if a filter expression matches a bitmask.
 
@@ -120,7 +125,7 @@ def matches(term: "Union[Term, CompiledFilter]", bitmask: "Bitmask") -> "bool":
     if isinstance(term, NonliteralTerm):
         return term.matches(bitmask)
     else:
-        return bool(bitmask & term._bitmask)
+        return bitmask & term._bitmask
 
 
 def _format_expr_term(term: "Term") -> str:
