@@ -4,7 +4,7 @@
 <p align="center">
 <img src="docs/snecs_logo.png" alt="snecs: a straightforward, nimble ECS for Python">
 </p>
-<h3 align="right">A straightforward, nimble ECS for Python.</h3>
+<h3 align="center">A straightforward, nimble ECS for Python.</h3>
 
 snecs is a pure Python, dependency-free [ECS] library, heavily inspired by
 Rust's [Legion], and aiming to be as fast and easy-to-use as possible.
