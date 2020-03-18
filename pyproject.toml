@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "snecs"
-version = "0.0.0"
-description = "A Straightforward, Nimble ECS for Python"
+version = "0.0.2"
+description = "A straightforward, nimble ECS for Python"
 authors = ["Slavfox <slavfoxman@gmail.com>"]
 license = "MPL-2.0"
-
+readme = "README.rst"
 repository = 'https://github.com/slavfox/snecs'
 keywords = ["ECS", "game engine", "gamedev"]
 classifiers = [
@@ -27,15 +27,22 @@ flake8 = "^3.7.9"
 flake8-typing-imports = "^1.5.1"
 isort = {version = "^4.3.21", extras = ["pyproject"]}
 flake8-comprehensions = "^3.2.2"
-flakehell = "^0.3.3"
 flake8-logging-format = "^0.6.0"
 bump2version = "^1.0.0"
 pre-commit = "^2.1.1"
 flake8-docstrings = "^1.5.0"
 pytest = "^5.3.5"
 black = {version = "^19.10b0", markers = "platform_python_implementation == 'cpython'"}
+# Change pylint to upstream when https://github.com/PyCQA/pylint/pull/3446 gets
+# released, and remove explicit astroid dependency
+astroid = { git = "https://github.com/PyCQA/astroid.git", rev = "ab9d147"}
+pylint = { git = "https://github.com/slavfox/pylint.git", branch = "W0223-narrowing" }
 pytest-cov = "^2.8.1"
 sphinx = "^2.4.3"
+# Necessary for flake8 pylint plugin, but we use flake8 in `make lint`
+# because of https://github.com/life4/flakehell/issues/34
+flakehell = "^0.3.3"
+flake8-colors = "^0.1.6"
 
 [tool.black]
 line-length = 79
@@ -48,33 +55,6 @@ use_parentheses = true
 line_length = 79
 known_third_party = ["snecs"]
 force_to_top = ["typing"]
-
-[tool.flakehell]
-format = "grouped"
-min_python_version = "3.6.0"
-show_source = true
-per-file-ignores = [
-    "snecs/_detail.py: D105"
-]
-
-[tool.flakehell.plugins]
-pyflakes = ["+*"]
-pycodestyle = ["+*"]
-mccabe = ["+*"]
-flake8-docstrings = [
-    "+*",
-    # One-line docstring should fit on one line with quotes; arbitrary
-    # bullshit with no real purpose.
-    "-D200"
-]
-pylint = [
-    "+*",
-    "-W0611",  # unused import - triggers false positives on typing imports
-    "-W0212"   # access to a protected member
-]
-flake8-comprehensions = ["+*"]
-flake8-logging-format = ["+*"]
-flake8-typing-imports = ["+*"]
 
 [build-system]
 requires = ["poetry>=0.12"]

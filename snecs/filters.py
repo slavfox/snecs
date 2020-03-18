@@ -21,13 +21,7 @@ if TYPE_CHECKING:
         NoReturn,
     )
 
-    # The ComponentMeta import is detected by both PyCharm and flake8 as
-    # unused, but it *is* used - literally on the next line. To be fair,
-    # detecting this kind of use is really hard to do without false positives,
-    # so we're exempting this line from linting explicitly.
-    #
-    # noinspection PyUnresolvedReferences
-    from snecs.component import ComponentMeta  # noqa
+    from snecs.component import ComponentMeta
 
     _Selector = Bitmask
     _ValueMask = Bitmask
@@ -60,12 +54,7 @@ class NonliteralTerm(ABC):
         ...
 
 
-class CompiledFilter(NonliteralTerm, ABC):  # noqa: W0223
-    #                           "Method 'matches' is abstract in class
-    #                           'NonliteralTerm' but is not overridden."
-    #                           A false positive from, to nobody's surprise,
-    #                           pylint. CompiledFilter is an abstract class,
-    #                           so it doesn't have to override _make_matcher.
+class CompiledFilter(NonliteralTerm, ABC):
     __slots__ = ("_expr",)
 
     def __init__(self, ex: "str") -> "None":
@@ -77,10 +66,10 @@ class CompiledFilter(NonliteralTerm, ABC):  # noqa: W0223
 
 def compile_filter(term: "Term") -> "CompiledFilter":
     """
-    Compile a filter into a much faster function (`Bitmask`) -> `bool`.
+    Compile a filter into a much faster function (Bitmask) -> `bool`.
 
     :param term: Filter expression to compile
-    :return: a function taking a `Bitmask` and returning `True` if it
+    :return: a function taking a Bitmask and returning `True` if it
              matches the filter and `False` if it doesn't.
     """
     if isinstance(term, Expr):
@@ -241,12 +230,12 @@ class ExprCompiler:
         clauses = self.clauses
         if not self.clauses:
             # FalseExpr
-            def match(_: object, bitmask: "Bitmask") -> bool:  # noqa: W0613
+            def match(_: object, bitmask: "Bitmask") -> bool:
                 return False
 
         elif len(self.clauses) == 1 and self.clauses[0][0] == 0:
             # TrueExpr
-            def match(_: object, bitmask: "Bitmask") -> bool:  # noqa: W0613
+            def match(_: object, bitmask: "Bitmask") -> bool:
                 return True
 
         elif len(self.clauses) == 1:
@@ -319,7 +308,7 @@ class Expr(NonliteralTerm, ABC):
         return f"{self.__class__}[{str(self)}]"
 
 
-class StaticExpr(Expr, ABC):  # noqa: W0223, again
+class StaticExpr(Expr, ABC):
     """
     Base class for expressions reducible to a form with no variables.
     """
@@ -402,7 +391,7 @@ TrueExpr = _TrueExpr()
 FalseExpr = _FalseExpr()
 
 
-class DynExpr(Expr, ABC):  # noqa: W0223, again
+class DynExpr(Expr, ABC):
     """
     Base abstract class for "dynamic" filter expressions, that have arguments.
 
@@ -508,7 +497,7 @@ class NotExpr(DynExpr):
         return f"~{_format_expr_term(self.terms[0])}"
 
 
-class MultiExpr(DynExpr, ABC):  # noqa: W0223, get your shit together pylint
+class MultiExpr(DynExpr, ABC):
     """
     An abstract base class for 2+-ary expressions, like ``X & Y & Z``.
     """

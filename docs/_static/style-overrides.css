@@ -1,0 +1,8 @@
+@font-face {
+    font-family: "xkcd-script";
+    src: url("./xkcd-script.woff");
+}
+
+.body h1, .body h2 {
+    font-family: "xkcd-script" !important;
+}

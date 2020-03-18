@@ -80,7 +80,7 @@ lint: $(VENV_SITE_PACKAGES)/flake8 $(VENV_SITE_PACKAGES)/isort
 
 $(VENV_SITE_PACKAGES)/%:
 	@printf "$(INFO) Installing dev dependencies.$(NC)\n"
-	@poetry install -E docs
+	@poetry install
 	@printf "$(INFO) Done.$(NC)\n"
 
 docs: $(VENV_SITE_PACKAGES)/sphinx

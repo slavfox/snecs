@@ -14,8 +14,62 @@ The names defined here are not part of the public API, and subject to change.
 from typing import TYPE_CHECKING, Any, Mapping, TypeVar, Union
 from abc import ABC, abstractmethod
 
+__all__ = ["EntityCounter", "EntityID", "InvariantDict", "Bitmask", "ZERO"]
+
+
+class EntityID(int):
+    """
+    A ``NewType(int)`` that only allows incrementation.
+    """
+
+    __slots__ = ()
+
+    if TYPE_CHECKING:
+
+        def __add__(self, other: "int") -> "EntityID":
+            ...
+
+        def __iadd__(self, other: "int") -> "EntityID":
+            ...
+
+
 if TYPE_CHECKING:
     from typing import Generator, Iterable, NoReturn, Iterator, Optional
+
+    class EntityCounter(Iterator[EntityID]):
+        """
+        A version of itertools.count typed to return EntityIDs.
+        """
+
+        def __init__(
+            self,
+            firstval: "EntityID" = EntityID(0),  # noqa: W0613 unused argument
+        ) -> "None":
+            ...
+
+        def __iter__(self) -> "Iterator[EntityID]":
+            ...
+
+        def __next__(self) -> "EntityID":
+            ...
+
+    class _Dict:
+        """Dict, but ignored by mypy."""
+
+        # Here's the problem:
+        # I want InvariantDict to keep the native dict performance, so it has
+        # to inherit from dict. At the same time, calling most normal dict
+        # methods on an InvariantDict is not valid, and I'd like the type
+        # system to reflect this.
+        # Ideally, I'd like to mark InvariantDict as a subtype of Mapping,
+        # but not Dict.
+        # This is why, for Mypy, we make `_Dict` is a no-op class, but for the
+        # interpreter, it's literally just the builtin `dict.
+
+
+else:
+    _Dict = dict
+    from itertools import count as EntityCounter
 
 _IntOrBitmask = Union[int, "Bitmask"]
 
@@ -60,52 +114,20 @@ class Bitmask(int):
         def __lshift__(self, other: "int") -> "Bitmask":
             ...
 
-        del __lshift__
-
         def __rshift__(self, other: "int") -> "Bitmask":
             ...
-
-        del __rshift__
 
         def __and__(self, other: "_IntOrBitmask") -> "Bitmask":
             ...
 
-        del __and__
-
         def __xor__(self, other: "_IntOrBitmask") -> "Bitmask":
             ...
-
-        del __xor__
 
         def __or__(self, other: "_IntOrBitmask") -> "Bitmask":
             ...
 
-        del __or__
-
         def __invert__(self) -> "Bitmask":
             ...
-
-        del __invert__
-
-
-class EntityID(int):
-    """
-    A ``NewType(int)`` that only allows incrementation.
-    """
-
-    __slots__ = ()
-
-    if TYPE_CHECKING:
-
-        def __add__(self, other: "int") -> "EntityID":
-            ...
-
-        del __add__
-
-        def __iadd__(self, other: "int") -> "EntityID":
-            ...
-
-        del __iadd__
 
 
 def bits(bitmask: "Bitmask") -> "Generator[Bitmask, None, None]":
@@ -118,38 +140,11 @@ def bits(bitmask: "Bitmask") -> "Generator[Bitmask, None, None]":
 
 ZERO = Bitmask(0)
 
-if TYPE_CHECKING:
-
-    class _Dict:
-        """Dict, but ignored by mypy."""
-
-        # Definition intentionally left blank.
-        #
-        # ...wait, what?
-        #
-        # Here's the problem:
-        # I want InvariantDict to keep the native dict performance, so it has
-        # to inherit from dict. At the same time, calling most normal dict
-        # methods on an InvariantDict is not valid, and I'd like the type
-        # system to reflect this.
-        # Ideally, I'd like to mark InvariantDict as a subtype of Mapping,
-        # and not Dict. Unfortunately, you can't subtype X and tell
-        # mypy to *pretend* your class isn't *really* a subtype of X.
-        #
-        # Oh, wait, nevermind. You actually *can*. That's what I'm doing here.
-
-
-else:
-    _Dict = dict
-
 
 K = TypeVar("K")
 V = TypeVar("V")
 
-a: object = None
 
-
-# noinspection PyNestedDecorators
 class InvariantDict(_Dict, Mapping[K, V], ABC):
     """
     A mapping with auto-assigned keys that rejects mutation other than add().
@@ -221,14 +216,8 @@ class InvariantDict(_Dict, Mapping[K, V], ABC):
         def __getitem__(self, item: "K") -> "V":
             ...
 
-        del __getitem__
-
         def __iter__(self) -> "Iterator[K]":
             ...
 
-        del __iter__
-
         def __len__(self) -> "int":
             ...
-
-        del __len__

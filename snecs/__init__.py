@@ -14,5 +14,5 @@ from snecs.world import EntityID, World
 
 __all__ = ["World", "EntityID", "compile_filter", "Component"]
 
-__version_info__ = ("0", "0", "0")
+__version_info__ = ("0", "0", "2")
 __version__ = ".".join(__version_info__)

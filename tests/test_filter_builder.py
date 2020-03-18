@@ -16,7 +16,6 @@ from snecs.filters import AndExpr, NotExpr, OrExpr, compile_filter, matches
 def make_component_class(name, bitmask) -> Type[Component]:
     cls = new_class(name, (Component,))
     cls._bitmask = bitmask
-    # noinspection PyTypeChecker
     return cls
 
 

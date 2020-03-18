@@ -6,6 +6,7 @@ from types import MappingProxyType
 
 from snecs._detail import ZERO
 from snecs.component import _component_registry
+from snecs.query import query
 from snecs.world import default_world
 
 if TYPE_CHECKING:
@@ -20,6 +21,7 @@ __all__ = [
     "add_components",
     "entity_component",
     "entity_components",
+    "query",
 ]
 
 
@@ -34,7 +36,16 @@ def new_entity(
                        entity.
     :return: ID of the newly created entity.
     """
-    id_ = world._entity_counter = world._entity_counter + 1
+    if __debug__:
+        unique_ctypes = {c.__class__ for c in components}
+        if len(unique_ctypes) < len(components):
+            raise AssertionError(
+                f"Cannot create entity with components: {tuple(components)}."
+                f"Adding multiple components of the same type to one"
+                f"entity is not allowed."
+            )
+
+    id_ = next(world._entity_counter)
     bitmask = ZERO
     entdict = {}
     for component in components:
@@ -44,6 +55,34 @@ def new_entity(
     world._entities[id_] = entdict
     world._entity_bitmasks[id_] = bitmask
     return id_
+
+
+def add_component(
+    entity_id: "EntityID",
+    component: "Component",
+    world: "World" = default_world,
+) -> "None":
+    """
+    Add a single component instance to an entity.
+
+    Will throw KeyError if the `Component` type was not registered using
+    `register_component`, or if the entity doesn't exist in the given `World`.
+
+    :param entity_id: ID of the entity to add the Component to.
+    :param component: A single Component instances to add to the Entity.
+    :param world: The World holding the entity.
+    """
+    entity = world._entities[entity_id]
+    cc = component.__class__
+    if __debug__:
+        if cc in entity:
+            raise AssertionError(
+                f"Entity ID {entity_id} already has a {cc} component. Adding "
+                f"multiple components of the same type to one entity is not "
+                f"allowed."
+            )
+    entity[cc] = component
+    world._entity_bitmasks[entity_id] |= _component_registry[cc]
 
 
 def add_components(
@@ -62,20 +101,20 @@ def add_components(
     :param world: The World holding the entity.
     """
     entity = world._entities[entity_id]
-    if __debug__:
-        common = world._entities.keys() & {c.__class__ for c in components}
-        if common:
-            raise AssertionError(
-                f"Entity ID {entity_id} already has the following "
-                f"components: {common}. Adding multiple components of the "
-                f"same type to the same entity is not allowed."
-            )
     new_bitmask = ZERO
     for c in components:
         cc = c.__class__
+        if __debug__:
+            if cc in entity:
+                raise AssertionError(
+                    f"Entity ID {entity_id} already has a {cc} component. "
+                    f"Adding multiple components of the same type to one "
+                    f"entity is not allowed."
+                )
         new_bitmask |= _component_registry[cc]
+        # Waaay faster than entity.update({cc: c for ...}).
         entity[cc] = c
-    world._entities[entity_id].update({c.__class__: c for c in components})
+    world._entity_bitmasks[entity_id] = new_bitmask
 
 
 def entity_component(
@@ -165,7 +204,7 @@ def remove_component(
     world: "World" = default_world,
 ) -> "None":
     """
-    Remove a specific `Component` from an entity.
+    Remove the `Component` of a given type from an entity.
 
     Will throw a KeyError if the entity doesn't have a Component of the
     given type, or if the entity doesn't exist in this `World`.
@@ -177,15 +216,54 @@ def remove_component(
     :raises KeyError: If the entity doesn't exist in this `World` or it
                       doesn't have the specified component.
     """
+    del world._entities[entity_id][component_type]
+    world._entity_cache[component_type].remove(entity_id)
+    world._entity_bitmasks[entity_id] ^= _component_registry[component_type]
 
 
 def delete_entity(
-    entity_id: "EntityID", world: "World" = default_world, now: "bool" = False
+    entity_id: "EntityID", world: "World" = default_world
 ) -> "None":
     """
-    Schedule an entity for deletion from the World.
+    Schedule an entity for deletion from the `World`. Thread-safe.
 
-    :param entity_id:
-    :param world:
-    :param now: If True, delete the entity immediately.
+    The entity will be deleted on the next call to `process_pending_deletions`.
+
+    :param entity_id: ID of the entity to schedule for deletion
+    :param world: The World to delete the entity from
     """
+    world._entities_to_delete.add(entity_id)
+
+
+def delete_entity_immediately(
+    entity_id: "EntityID", world: "World" = default_world
+) -> "None":
+    """
+    Delete an entity from a given `World` immediately. *Not* thread-safe.
+
+    Idempotent. Will *not* throw a KeyError if the entity doesn't exist in
+    this `World`.
+
+    :param entity_id: ID of the entity to delete
+    :param world: The World to delete the entity from
+    """
+    ctypes = world._entities.pop(entity_id, ())
+    for ct in ctypes:
+        world._entity_cache[ct].discard(entity_id)
+    world._entity_bitmasks.pop(entity_id, None)
+
+
+def process_pending_deletions(world: "World") -> "None":
+    """
+    Process pending entity deletions.
+
+    Equivalent to calling `delete_entity_immediately(entity_id)` on all
+    entities for which `delete_entity(entity_id)` had been called for since
+    the last call to `process_pending_deletions`.
+
+    Idempotent. *Not* thread-safe.
+
+    :param world: The World to delete the entities from
+    """
+    for entid in world._entities_to_delete:
+        delete_entity_immediately(entid, world)

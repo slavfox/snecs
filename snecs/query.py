@@ -15,18 +15,18 @@ if TYPE_CHECKING:
 
     QueryRow = Tuple[EntityID, List[Component]]
     QueryIterator = Iterator[QueryRow]
-    DQ = TypeVar("DQ", bound="Query")
+    DQ = TypeVar("DQ", bound="query")
 
     T = TypeVar("T")
 
-    def set_intersection(  # noqa
-        *s: "AbstractSet[EntityID]",
+    def set_intersection(
+        *s: "AbstractSet[EntityID]",  # noqa
     ) -> AbstractSet[EntityID]:
         ...
 
 
 else:
-    # get rid of the attribute lookup for maximum speed
+    # get rid of the attribute lookup for performance
     set_intersection = frozenset().intersection
 
 
@@ -48,13 +48,6 @@ class BaseQuery(Iterable["QueryRow"], ABC):
 
 class CompiledQuery(BaseQuery, ABC):
     __slots__ = ()
-
-    def __init__(
-        self,
-        component_types: "Iterable[Type[Component]]",
-        world: "World" = default_world,
-    ) -> "None":
-        super().__init__(component_types, world)
 
 
 class CompiledFilterQuery(CompiledQuery):
@@ -106,7 +99,7 @@ class CompiledRawQuery(CompiledQuery):
             yield entid, [entcmps[c] for c in cmptypes]
 
 
-class Query(BaseQuery):
+class query(BaseQuery):
     __slots__ = ("_filters",)
 
     def __init__(
