@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snecs"
-version = "0.0.2"
+version = "0.1.0"
 description = "A straightforward, nimble ECS for Python"
 authors = ["Slavfox <slavfoxman@gmail.com>"]
 license = "MPL-2.0"
@@ -43,6 +43,9 @@ sphinx = "^2.4.3"
 # because of https://github.com/life4/flakehell/issues/34
 flakehell = "^0.3.3"
 flake8-colors = "^0.1.6"
+# For benchmarks
+pytest-benchmark = {version = "^3.2.3", extras = ["histogram"]}
+esper = "^1.3"
 
 [tool.black]
 line-length = 79

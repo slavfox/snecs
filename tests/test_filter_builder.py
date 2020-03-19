@@ -141,7 +141,7 @@ def test_complex_expression_builder(expr, expected_terms):
 def test_matching(expr, bitmask, should_match):
     assert matches(expr, bitmask) == should_match
     match = compile_filter(expr)
-    assert match @ bitmask == should_match
+    assert match.matches(bitmask) == should_match
 
 
 @pytest.mark.parametrize(

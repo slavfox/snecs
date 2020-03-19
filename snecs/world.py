@@ -8,7 +8,7 @@ snecs World - the repository of all the data in your game.
 """
 from typing import TYPE_CHECKING, Dict
 
-from snecs._detail import EntityCounter, EntityID
+from snecs._detail import EntityID
 from snecs.component import Component
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ class World:
     )
 
     def __init__(self) -> None:
-        self._entity_counter: "EntityCounter" = EntityCounter()
+        self._entity_counter: "EntityID" = EntityID(0)
         self._entities: "Dict[EntityID, Dict[Type[Component], Component]]" = {}
         self._entity_bitmasks: "Dict[EntityID, Bitmask]" = {}
         self._entity_cache: "Dict[Type[Component], Set[EntityID]]" = {}

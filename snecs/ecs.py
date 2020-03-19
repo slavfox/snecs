@@ -1,27 +1,31 @@
 """
 Functions for interacting with the ECS.
 """
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from types import MappingProxyType
 
 from snecs._detail import ZERO
-from snecs.component import _component_registry
-from snecs.query import query
-from snecs.world import default_world
+from snecs.component import _all_components_serializable, _component_names
+from snecs.world import World, default_world
 
 if TYPE_CHECKING:
-    from typing import Type, Iterable, TypeVar, Mapping
+    from typing import Type, Iterable, TypeVar, Mapping, Dict, Any, List
     from snecs.component import Component
-    from snecs.world import World, EntityID
+    from snecs._detail import EntityID
 
     C = TypeVar("C", bound=Component)
 
 __all__ = [
-    "new_entity",
+    "add_component",
     "add_components",
     "entity_component",
     "entity_components",
-    "query",
+    "has_component",
+    "has_components",
+    "remove_component",
+    "delete_entity",
+    "delete_entity_immediately",
+    "process_pending_deletions",
 ]
 
 
@@ -45,13 +49,15 @@ def new_entity(
                 f"entity is not allowed."
             )
 
-    id_ = next(world._entity_counter)
+    id_ = world._entity_counter = world._entity_counter + 1
     bitmask = ZERO
     entdict = {}
+    entcache = world._entity_cache
     for component in components:
         cc = component.__class__
-        bitmask |= _component_registry[cc]
+        bitmask |= component._bitmask
         entdict[cc] = component
+        entcache.setdefault(cc, set()).add(id_)
     world._entities[id_] = entdict
     world._entity_bitmasks[id_] = bitmask
     return id_
@@ -72,17 +78,18 @@ def add_component(
     :param component: A single Component instances to add to the Entity.
     :param world: The World holding the entity.
     """
-    entity = world._entities[entity_id]
+    entd = world._entities[entity_id]
     cc = component.__class__
     if __debug__:
-        if cc in entity:
+        if cc in entd:
             raise AssertionError(
                 f"Entity ID {entity_id} already has a {cc} component. Adding "
                 f"multiple components of the same type to one entity is not "
                 f"allowed."
             )
-    entity[cc] = component
-    world._entity_bitmasks[entity_id] |= _component_registry[cc]
+    entd[cc] = component
+    world._entity_cache.setdefault(cc, set()).add(entity_id)
+    world._entity_bitmasks[entity_id] |= component._bitmask
 
 
 def add_components(
@@ -100,20 +107,22 @@ def add_components(
     :param components: An iterable of Component instances to add to the Entity.
     :param world: The World holding the entity.
     """
-    entity = world._entities[entity_id]
+    entd = world._entities[entity_id]
     new_bitmask = ZERO
+    entcache = world._entity_cache
     for c in components:
         cc = c.__class__
         if __debug__:
-            if cc in entity:
+            if cc in entd:
                 raise AssertionError(
                     f"Entity ID {entity_id} already has a {cc} component. "
                     f"Adding multiple components of the same type to one "
                     f"entity is not allowed."
                 )
-        new_bitmask |= _component_registry[cc]
+        new_bitmask |= c._bitmask
         # Waaay faster than entity.update({cc: c for ...}).
-        entity[cc] = c
+        entd[cc] = c
+        entcache.setdefault(cc, set()).add(entity_id)
     world._entity_bitmasks[entity_id] = new_bitmask
 
 
@@ -218,7 +227,7 @@ def remove_component(
     """
     del world._entities[entity_id][component_type]
     world._entity_cache[component_type].remove(entity_id)
-    world._entity_bitmasks[entity_id] ^= _component_registry[component_type]
+    world._entity_bitmasks[entity_id] ^= component_type._bitmask
 
 
 def delete_entity(
@@ -267,3 +276,101 @@ def process_pending_deletions(world: "World") -> "None":
     """
     for entid in world._entities_to_delete:
         delete_entity_immediately(entid, world)
+
+
+SERIALIZED_COMPONENTS_KEY = 0
+SERIALIZED_ENTITIES_KEY = 1
+_serialized_key_type = int
+
+
+# This, sadly, has to have extremely loose typing until at least PyPy hits 3.8.
+# TypedDict came to `typing` way too late.
+# There's lots of type: ignore here, thanks to that.
+def serialize_world(  # type: ignore
+    world: "World",
+) -> "Dict[_serialized_key_type, Any]":
+    """
+    Serialize a World and all the Entities and Components inside it.
+
+    Returns a Python dictionary that can be passed to `deserialize_world` to
+    reconstruct the serialized world.
+
+    You can for example, dump the output of `serialize_world` to a file with
+    `json.dump`, to use as an effortless savegame format.
+    """
+    if not _all_components_serializable:
+        raise ValueError(
+            "Cannot serialize a World if the components aren't serializable."
+        )
+
+    # A mapping of component type names to indices in `component_types`
+    reverse_components = {}
+    component_types: "List[str]" = []
+
+    entities = {}
+    for ent_id, components in world._entities.items():
+        serialized: "Dict[int, Any]" = {}  # type: ignore
+        for ctype, cmpnt in components.items():
+            if ctype not in reverse_components:
+                idx = reverse_components[ctype] = len(component_types)
+                component_types.append(ctype.__name__)
+            else:
+                idx = reverse_components[ctype]
+            serialized[idx] = cmpnt.serialize()  # type: ignore
+        entities[ent_id] = serialized  # type: ignore
+
+    return {  # type: ignore
+        SERIALIZED_COMPONENTS_KEY: component_types,
+        SERIALIZED_ENTITIES_KEY: entities,  # type: ignore
+    }
+
+
+def deserialize_world(  # type: ignore
+    serialized: "Dict[_serialized_key_type, Any]",
+) -> "World":
+    """
+    Deserialize a dictionary as output by `serialize_world` into a `World`.
+
+    If any of the component types that were registered in the serialized World
+    are not registered when you call `deserialize_world`, or any of them
+    have been renamed, this will fail and raise a ValueError.
+
+    :return: World
+    """
+    if not _all_components_serializable:
+        raise ValueError(
+            "Cannot deserialize a World if the components aren't "
+            "deserializable."
+        )
+
+    world = World()
+    serialized_names = cast(
+        "List[str]", serialized[SERIALIZED_COMPONENTS_KEY]  # type: ignore
+    )
+    component_types: "List[Type[Component]]" = [
+        _component_names[name] for name in serialized_names
+    ]
+    serialized_entities = cast(
+        "Dict[EntityID, Dict[int, str]]",
+        serialized[SERIALIZED_ENTITIES_KEY],  # type: ignore
+    )
+    for ent_id, components in serialized_entities.items():
+        cmp_instances = [
+            component_types[i].deserialize(serialized)
+            for i, serialized in components.items()
+        ]
+        if ent_id > world._entity_counter:
+            world._entity_counter = ent_id
+        # This is pretty directly copied over from `add_component`
+        bitmask = ZERO
+        entdict = {}
+        entcache = world._entity_cache
+        for component in cmp_instances:
+            cc = component.__class__
+            bitmask |= component._bitmask
+            entdict[cc] = component
+            entcache.setdefault(cc, set()).add(ent_id)
+        world._entities[ent_id] = entdict
+        world._entity_bitmasks[ent_id] = bitmask
+
+    return world

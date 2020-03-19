@@ -14,7 +14,7 @@ The names defined here are not part of the public API, and subject to change.
 from typing import TYPE_CHECKING, Any, Mapping, TypeVar, Union
 from abc import ABC, abstractmethod
 
-__all__ = ["EntityCounter", "EntityID", "InvariantDict", "Bitmask", "ZERO"]
+__all__ = ["EntityID", "InvariantDict", "Bitmask", "ZERO"]
 
 
 class EntityID(int):
@@ -34,24 +34,7 @@ class EntityID(int):
 
 
 if TYPE_CHECKING:
-    from typing import Generator, Iterable, NoReturn, Iterator, Optional
-
-    class EntityCounter(Iterator[EntityID]):
-        """
-        A version of itertools.count typed to return EntityIDs.
-        """
-
-        def __init__(
-            self,
-            firstval: "EntityID" = EntityID(0),  # noqa: W0613 unused argument
-        ) -> "None":
-            ...
-
-        def __iter__(self) -> "Iterator[EntityID]":
-            ...
-
-        def __next__(self) -> "EntityID":
-            ...
+    from typing import Iterable, NoReturn, Iterator, Optional
 
     class _Dict:
         """Dict, but ignored by mypy."""
@@ -69,7 +52,6 @@ if TYPE_CHECKING:
 
 else:
     _Dict = dict
-    from itertools import count as EntityCounter
 
 _IntOrBitmask = Union[int, "Bitmask"]
 
@@ -128,14 +110,6 @@ class Bitmask(int):
 
         def __invert__(self) -> "Bitmask":
             ...
-
-
-def bits(bitmask: "Bitmask") -> "Generator[Bitmask, None, None]":
-    """Return a list of individual bits in a bitmask."""
-    for n in range(bitmask.bit_length()):
-        bit = bitmask & (1 << n)
-        if bit:
-            yield bit
 
 
 ZERO = Bitmask(0)

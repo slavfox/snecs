@@ -54,3 +54,4 @@ dmypy.json
 .AppleDouble
 .LSOverride
 ._*
+.benchmarks/

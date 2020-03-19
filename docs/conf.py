@@ -1,5 +1,5 @@
-import datetime
 import configparser
+import datetime
 from pathlib import Path
 
 project = "snecs"

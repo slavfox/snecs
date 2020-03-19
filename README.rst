@@ -1,12 +1,28 @@
-.. image:: https://raw.githubusercontent.com/slavfox/snecs/master/docs/snecs_logo.png
+.. image:: https://raw.githubusercontent.com/slavfox/snecs/master/docs/_static/snecs_logo.png
    :align: center
    :alt: snecs
 
-========================
-snecs (work in progress)
-========================
+=====
+snecs
+=====
+.. image:: https://img.shields.io/pypi/v/snecs
+   :alt: PyPI
+   :target: https://pypi.org/project/snecs/
 
-.. image:: https://img.shields.io/github/license/slavfox/snecs?style=flat-square
+.. image:: https://img.shields.io/pypi/pyversions/snecs
+   :alt: PyPI - Python Version
+
+.. image:: https://img.shields.io/pypi/implementation/snecs
+   :alt: PyPI - Implementation
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
+
+.. image:: https://img.shields.io/badge/mypy-typed-informational
+   :alt: Mypy: checked
+   :target: http://mypy-lang.org/
+
+.. image:: https://img.shields.io/github/license/slavfox/snecs
    :alt: GitHub
 
 A straightforward, nimble ECS for Python.
