@@ -9,13 +9,32 @@ snecs
 A straightforward, nimble ECS for Python.
 
 .. teaser-start
-|PyPI badge| |PyVersion badge| |PyImplementation badge| |Black badge| |Mypy badge| |License badge|
+|PyPI badge| |PyVersion badge| |PyImplementation badge| |Mypy badge| |License badge|
 
-``snecs`` is a pure Python, dependency-free
+``snecs`` is a pure Python 3.6+, dependency-free
 `ECS <https://en.wikipedia.org/wiki/Entity_component_system>`__ library,
 heavily inspired by Rust’s
 `Legion <https://github.com/TomGillen/legion>`__, and aiming to be as
 fast and easy-to-use as possible.
+
+
+.. |PyPI badge| image:: https://img.shields.io/pypi/v/snecs
+   :alt: PyPI
+   :target: https://pypi.org/project/snecs/
+
+.. |PyVersion badge| image:: https://img.shields.io/pypi/pyversions/snecs
+   :alt: PyPI - Python Version
+
+.. |PyImplementation badge| image:: https://img.shields.io/pypi/implementation/snecs
+   :alt: PyPI - Implementation
+
+.. |Mypy badge| image:: https://img.shields.io/badge/mypy-typed-informational
+   :alt: Mypy: checked
+   :target: http://mypy-lang.org/
+
+.. |License badge| image:: https://img.shields.io/github/license/slavfox/snecs
+   :alt: GitHub
+   :target: https://github.com/slavfox/snecs/blob/master/LICENSE
 
 .. teaser-end
 
@@ -102,23 +121,3 @@ Version 2.0, the full text of which is available
 `LICENSE <https://github.com/slavfox/snecs/blob/master/LICENSE>`__. If
 you have questions about the license, check Mozilla’s `MPL
 FAQ <https://www.mozilla.org/en-US/MPL/2.0/FAQ/>`__.
-
-.. |PyPI badge| image:: https://img.shields.io/pypi/v/snecs
-   :alt: PyPI
-   :target: https://pypi.org/project/snecs/
-
-.. |PyVersion badge| image:: https://img.shields.io/pypi/pyversions/snecs
-   :alt: PyPI - Python Version
-
-.. |PyImplementation badge| image:: https://img.shields.io/pypi/implementation/snecs
-   :alt: PyPI - Implementation
-
-.. |Black badge| image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :target: https://github.com/psf/black
-
-.. |Mypy badge| image:: https://img.shields.io/badge/mypy-typed-informational
-   :alt: Mypy: checked
-   :target: http://mypy-lang.org/
-
-.. |License badge| image:: https://img.shields.io/github/license/slavfox/snecs
-   :alt: GitHub
