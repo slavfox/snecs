@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING, TypeVar
 from abc import ABC, ABCMeta
 
 from snecs._detail import Bitmask, InvariantDict
-from snecs.filters import AndExpr, Expr, NotExpr, OrExpr
+from snecs._filters import AndExpr, Expr, NotExpr, OrExpr
 
 if TYPE_CHECKING:
     from typing import Type, Any, Dict
-    from snecs.filters import Term
+    from snecs._filters import Term
 
     CType = TypeVar("CType", bound="Component")
 

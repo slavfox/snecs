@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snecs"
-version = "0.1.0"
+version = "0.2.0"
 description = "A straightforward, nimble ECS for Python"
 authors = ["Slavfox <slavfoxman@gmail.com>"]
 license = "MPL-2.0"
@@ -8,7 +8,7 @@ readme = "README.rst"
 repository = 'https://github.com/slavfox/snecs'
 keywords = ["ECS", "game engine", "gamedev"]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Topic :: Games/Entertainment",

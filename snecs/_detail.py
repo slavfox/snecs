@@ -17,24 +17,23 @@ from abc import ABC, abstractmethod
 __all__ = ["EntityID", "InvariantDict", "Bitmask", "ZERO"]
 
 
-class EntityID(int):
-    """
-    A ``NewType(int)`` that only allows incrementation.
-    """
-
-    __slots__ = ()
-
-    if TYPE_CHECKING:
-
-        def __add__(self, other: "int") -> "EntityID":
-            ...
-
-        def __iadd__(self, other: "int") -> "EntityID":
-            ...
-
-
 if TYPE_CHECKING:
     from typing import Iterable, NoReturn, Iterator, Optional
+
+    class EntityID(int):
+        """
+        A ``NewType(int)`` that only allows incrementation.
+        """
+
+        __slots__ = ()
+
+        if TYPE_CHECKING:
+
+            def __add__(self, other: "int") -> "EntityID":
+                ...
+
+            def __iadd__(self, other: "int") -> "EntityID":
+                ...
 
     class _Dict:
         """Dict, but ignored by mypy."""
@@ -52,6 +51,7 @@ if TYPE_CHECKING:
 
 else:
     _Dict = dict
+    EntityID = int
 
 _IntOrBitmask = Union[int, "Bitmask"]
 

@@ -4,7 +4,7 @@ Query builder.
 from typing import TYPE_CHECKING, Iterable, Iterator
 from abc import ABC, abstractmethod
 
-from snecs.filters import compile_filter, matches
+from snecs._filters import compile_filter, matches
 from snecs.world import default_world
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     )
     from snecs.component import Component
     from snecs.world import EntityID, World
-    from snecs.filters import Term, CompiledFilter
+    from snecs._filters import Term, CompiledFilter
 
     QueryRow = Tuple[EntityID, List[Component]]
     QueryIterator = Iterator[QueryRow]
@@ -35,10 +35,12 @@ if TYPE_CHECKING:
 
 else:
     # get rid of the attribute lookup for performance
-    set_intersection = frozenset().intersection
+    set_intersection = set.intersection
 
 
 __all__ = ["query"]
+
+_EMPTY_SET: "AbstractSet[EntityID]" = frozenset()
 
 
 class BaseQuery(Iterable["QueryRow"], ABC):
@@ -104,7 +106,7 @@ class CompiledFilterQuery(CompiledQuery):
         # list comprehensions are faster than generators if we don't need to
         # have an early exit.
         valid_entities: "AbstractSet[EntityID]" = set_intersection(
-            *[entcache[ct] for ct in self.component_types]
+            *[entcache.get(ct, _EMPTY_SET) for ct in self.component_types]
         )
         # Moving attributes into the local scope to avoid doing attribute
         # lookups in a loop
@@ -124,7 +126,7 @@ class CompiledRawQuery(CompiledQuery):
     def __iter__(self) -> "QueryIterator":
         entcache = self.world._entity_cache
         valid_entities: "AbstractSet[EntityID]" = set_intersection(
-            *[entcache[ct] for ct in self.component_types]
+            *[entcache.get(ct, _EMPTY_SET) for ct in self.component_types]
         )
         entities = self.world._entities
         cmptypes = self.component_types
@@ -220,11 +222,11 @@ class query(BaseQuery):
         fst, *rest = cmptypes
         if rest:
             valid_entities: "AbstractSet[EntityID]" = set_intersection(
-                *[entcache[ct] for ct in cmptypes]
+                *[entcache.get(ct, _EMPTY_SET) for ct in cmptypes]
             )
         else:
             # elide the set intersection if we don't need to do it
-            valid_entities = entcache[fst]
+            valid_entities = entcache.get(fst, _EMPTY_SET)
         flt = self._filters
         entities = self.world._entities
         # If this query is filtered, match against each result individually.

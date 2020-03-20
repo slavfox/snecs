@@ -9,8 +9,8 @@ from types import new_class
 
 import pytest
 from snecs._detail import Bitmask
+from snecs._filters import AndExpr, NotExpr, OrExpr, compile_filter, matches
 from snecs.component import Component
-from snecs.filters import AndExpr, NotExpr, OrExpr, compile_filter, matches
 
 
 def make_component_class(name, bitmask) -> Type[Component]:

@@ -84,7 +84,7 @@ $(VENV_SITE_PACKAGES)/%:
 	@printf "$(INFO) Done.$(NC)\n"
 
 docs: $(VENV_SITE_PACKAGES)/sphinx
-	cd docs && make html
+	sphinx-build docs docs/_build/ -a -b dirhtml
 
 test: $(VENV_SITE_PACKAGES)/pytest
 	poetry run pytest --cov=$(SRC_DIR) --cov-report html --tb=short tests

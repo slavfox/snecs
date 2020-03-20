@@ -7,7 +7,7 @@
 Type aliases to facilitate easier typing of snecs-dependent code.
 """
 from snecs._detail import EntityID
-from snecs.filters import Expr as FilterExpressionType
+from snecs._filters import Expr as FilterExpressionType
 from snecs.query import BaseQuery as QueryType
 from snecs.query import CompiledQuery as CompiledQueryType
 
