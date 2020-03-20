@@ -22,7 +22,7 @@ from snecs.ecs import (
     new_entity,
     remove_component,
 )
-from snecs.query import query
+from snecs.query import Query
 from snecs.world import World as SnecsWorld
 
 
@@ -457,7 +457,7 @@ def test_component_lookups_compiled_snecs(
         ]
         * 128
     ]
-    q = query((SnecsComponentA, SnecsComponentC), snecs_world).compile()
+    q = Query((SnecsComponentA, SnecsComponentC), snecs_world).compile()
 
     def snecs_has_components():
         return [result for result in q]
@@ -491,7 +491,7 @@ def test_component_lookups_dynamic_snecs(
     def snecs_has_components():
         return [
             result
-            for result in query(
+            for result in Query(
                 (SnecsComponentA, SnecsComponentC), snecs_world
             )
         ]

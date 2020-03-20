@@ -1,4 +1,4 @@
-.PHONY: help lint test doc-deps docs check
+.PHONY: help lint test docs check clean
 
 ifdef NOCOLOR
 NC=
@@ -38,7 +38,7 @@ endif
 
 SRC_DIR=snecs
 TESTS_DIR=tests
-DOCS_DIR=
+DOCS_DIR=docs
 
 help:
 	@printf "make help         - display this message\n"
@@ -46,6 +46,7 @@ help:
 	@printf "make lint         - run linters\n"
 	@printf "make check        - run linters AND tests\n"
 	@printf "make docs         - build documentation\n"
+	@printf "make docs         - remove documentation build directory\n"
 
 # Run all linters (isort, black, flake8, mypy) without early-exiting if
 # any of them fails.
@@ -81,10 +82,14 @@ lint: $(VENV_SITE_PACKAGES)/flake8 $(VENV_SITE_PACKAGES)/isort
 $(VENV_SITE_PACKAGES)/%:
 	@printf "$(INFO) Installing dev dependencies.$(NC)\n"
 	@poetry install
+	@pip install git+https://github.com/PyCQA/astroid.git
 	@printf "$(INFO) Done.$(NC)\n"
 
-docs: $(VENV_SITE_PACKAGES)/sphinx
-	sphinx-build docs docs/_build/ -a -b dirhtml
+docs: $(VENV_SITE_PACKAGES)/sphinxcontrib
+	sphinx-build $(DOCS_DIR) $(DOCS_DIR)/_build/ -a -b dirhtml
+
+clean:
+	rm -rf $(DOCS_DIR)/_build/*
 
 test: $(VENV_SITE_PACKAGES)/pytest
 	poetry run pytest --cov=$(SRC_DIR) --cov-report html --tb=short tests

@@ -7,7 +7,6 @@ from snecs.component import RegisteredComponent
 from snecs.ecs import (
     add_component,
     add_components,
-    delete_entity,
     delete_entity_immediately,
     entity_component,
     entity_components,
@@ -16,8 +15,10 @@ from snecs.ecs import (
     new_entity,
     process_pending_deletions,
     remove_component,
+    schedule_for_deletion,
 )
-from snecs.world import EntityID, World
+from snecs.types import EntityID
+from snecs.world import World
 
 
 class TestComponent(RegisteredComponent):

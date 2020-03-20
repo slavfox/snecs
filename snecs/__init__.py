@@ -13,7 +13,7 @@ from snecs.component import Component, RegisteredComponent, register_component
 from snecs.ecs import (
     add_component,
     add_components,
-    delete_entity,
+    all_components,
     delete_entity_immediately,
     deserialize_world,
     entity_component,
@@ -23,9 +23,10 @@ from snecs.ecs import (
     new_entity,
     process_pending_deletions,
     remove_component,
+    schedule_for_deletion,
     serialize_world,
 )
-from snecs.query import query
+from snecs.query import Query
 from snecs.world import World
 
 __all__ = [
@@ -41,13 +42,14 @@ __all__ = [
     "entity_components",
     "has_component",
     "has_components",
+    "all_components",
     "remove_component",
-    "delete_entity",
+    "schedule_for_deletion",
     "delete_entity_immediately",
     "process_pending_deletions",
     "serialize_world",
     "deserialize_world",
-    "query",
+    "Query",
 ]
 
 __version_info__ = ("0", "2", "0")

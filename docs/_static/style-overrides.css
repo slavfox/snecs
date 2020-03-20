@@ -3,6 +3,10 @@
     src: url("./xkcd-script.woff");
 }
 
+#snecs h1, #a-straightforward-nimble-ecs-for-python h2 {
+    text-align: center;
+}
+
 .body h1, .body h2 {
     font-family: "xkcd-script" !important;
 }

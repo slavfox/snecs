@@ -6,16 +6,16 @@
 """
 snecs World - the repository of all the data in your game.
 """
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, cast
 
-from snecs._detail import EntityID
 from snecs.component import Component
 
 if TYPE_CHECKING:
-    from typing import Type, Set
+    from typing import Type, Set, Dict, Optional
     from snecs._detail import Bitmask
+    from snecs.types import EntityID
 
-__all__ = ["World", "EntityID"]
+__all__ = ["World"]
 
 
 class World:
@@ -29,14 +29,22 @@ class World:
         "_entity_bitmasks",
         "_entity_cache",
         "_entities_to_delete",
+        "name",
     )
 
-    def __init__(self) -> None:
-        self._entity_counter: "EntityID" = EntityID(0)
+    def __init__(self, name: "Optional[str]" = None) -> None:
+        self.name: "Optional[str]" = name
+        self._entity_counter: "EntityID" = cast("EntityID", 0)
         self._entities: "Dict[EntityID, Dict[Type[Component], Component]]" = {}
         self._entity_bitmasks: "Dict[EntityID, Bitmask]" = {}
         self._entity_cache: "Dict[Type[Component], Set[EntityID]]" = {}
         self._entities_to_delete: "Set[EntityID]" = set()
 
+    def __repr__(self) -> "str":
+        if self.name is not None:
+            return f"<{self.name} World>"
+        else:
+            return f"<World ({self._entity_counter} entities)>"
 
-default_world = World()
+
+default_world = World("default")

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     CType = TypeVar("CType", bound="Component")
 
-__all__ = ["Component", "register_component"]
+__all__ = ["Component", "RegisteredComponent", "register_component"]
 
 
 class ComponentMeta(ABCMeta):
@@ -109,7 +109,7 @@ class Component(ABC, metaclass=ComponentMeta):
         Override this in all your Component classes to make use of snecs'
         full-World serialization feature.
         """
-        raise TypeError(
+        raise AttributeError(
             f"{self.__class__} doesn't define serialize()"
             f"and so is not serializable."
         )
@@ -126,7 +126,7 @@ class Component(ABC, metaclass=ComponentMeta):
         Override this in all your Component classes to make use of snecs'
         full-World serialization feature.
         """
-        raise TypeError(
+        raise AttributeError(
             f"{cls} doesn't define deserialize()"
             f"and so is not deserializable."
         )
@@ -141,7 +141,6 @@ class _ComponentRegistry(InvariantDict["Type[Component]", "Bitmask"]):
 
 _component_registry: "_ComponentRegistry" = _ComponentRegistry()
 _component_names: "Dict[str, Type[Component]]" = {}
-_all_components_serializable = False
 
 
 def _overrides_serialize(cls: "Type[Component]") -> "bool":
@@ -185,9 +184,6 @@ def register_component(component: "Type[CType]") -> "Type[CType]":
     *must* inherit from `Component` and be registered by decorating it with
     ``@register_component``.
     """
-    # This might actually be the first time I'm using this in my life.
-    global _all_components_serializable  # noqa: W0603 I'm so sorry
-
     # we're going to be using this a lot
     cn = component.__name__
     if component in _component_registry:
@@ -209,18 +205,6 @@ def register_component(component: "Type[CType]") -> "Type[CType]":
                 f"either both or neither of those methods in registered "
                 f"component classes."
             )
-        # we have both serialize and deserialize, check if any components
-        # are already registered
-        if _component_registry:
-            if not _all_components_serializable:
-                raise TypeError(
-                    f"Component class {cn} is serializable, but an "
-                    f"unserializable component class was already registered. "
-                    f"Either all of none of your registered component classes"
-                    f"must be serializable."
-                )
-        else:
-            _all_components_serializable = True
         serializable = True
     elif has_deserialize:
         raise TypeError(
@@ -228,14 +212,6 @@ def register_component(component: "Type[CType]") -> "Type[CType]":
             f"not define `serialize()`. You must implement either both or "
             f"neither of those methods in registered component classes."
         )
-    # neither serialize or deserialize
-    else:
-        if _all_components_serializable:
-            raise TypeError(
-                f"Component class {cn} is unserializable, but a serializable "
-                f"component class was already registered. Either all of none "
-                f"of your registered component classes must be serializable."
-            )
     if cn in _component_names and serializable:
         raise ValueError(
             f"A Component class named {cn} is already registered. Cannot "
@@ -248,9 +224,9 @@ def register_component(component: "Type[CType]") -> "Type[CType]":
 
 class RegisteredComponent(Component):
     """
-    A convenience class for registering `Component`s.
+    A convenience `Component` subclass for auto-registering components.
 
-    The following two ways of defining a Component are equivalent::
+    The following two ways of defining a component are equivalent::
 
         @register_component
         class MyComponent1(snecs.Component):
@@ -259,9 +235,20 @@ class RegisteredComponent(Component):
         class MyComponent2(snecs.RegisteredComponent):
             ...
 
-    However, bear in mind that all subclasses of a RegisteredComponent
-    subclass will also get registered. If any of them are serializable,
-    all of them must be.
+    Bear in mind, however, that all subclasses of a RegisteredComponent
+    subclass will also get registered. Registering unnecessary components
+    does have a slight performance and memory impact, so it's better to
+    explicitly use `register_component`, or use ``RegisteredComponent`` as a
+    mixin on leaf classes only::
+
+        class AbstractComponent(snecs.Component, ABC):
+            ...
+
+        class ConcreteComponent(AbstractComponent, RegisteredComponent):
+            ...
+
+    This last approach isn't much different than just decorating your
+    components with `register_component`, though.
     """
 
     def __init_subclass__(cls) -> "None":

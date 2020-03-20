@@ -1,31 +1,58 @@
+# Copyright (c) 2020 Slavfox
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 Functions for interacting with the ECS.
+
+All the functions in this module are reexported under the ``snecs`` root for
+convenience, so that you can::
+
+    from snecs import new_entity
+
+    new_entity(...)
+
+    # or
+
+    import snecs
+
+    snecs.new_entity(...)
+    snecs.add_component(...)
+
+Instead of having to type ``snecs.ecs`` every time.
 """
 from typing import TYPE_CHECKING, cast
 from types import MappingProxyType
 
 from snecs._detail import ZERO
-from snecs.component import _all_components_serializable, _component_names
+from snecs.component import _component_names
 from snecs.world import World, default_world
 
 if TYPE_CHECKING:
     from typing import Type, Iterable, TypeVar, Mapping, Dict, Any, List
     from snecs.component import Component
-    from snecs._detail import EntityID
+    from snecs.types import EntityID, SerializedWorldType
 
     C = TypeVar("C", bound=Component)
 
 __all__ = [
+    "new_entity",
     "add_component",
     "add_components",
     "entity_component",
     "entity_components",
+    "all_components",
     "has_component",
     "has_components",
     "remove_component",
-    "delete_entity",
+    "schedule_for_deletion",
     "delete_entity_immediately",
     "process_pending_deletions",
+    "serialize_world",
+    "deserialize_world",
+    "SERIALIZED_COMPONENTS_KEY",
+    "SERIALIZED_ENTITIES_KEY"
 ]
 
 
@@ -33,12 +60,17 @@ def new_entity(
     components: "Iterable[Component]" = (), world: "World" = default_world
 ) -> "EntityID":
     """
-    Create an entity in a `World` with the given Components, returning its ID.
+    Create an entity in a World with the given Components, returning its ID.
 
     :param world: World to create the entity in.
-    :param components: An iterable of `Component` instances to attach to the
+    :type world: :class:`~snecs.World`
+
+    :param components: An iterable of Component instances to attach to the
                        entity.
+    :type components: Iterable[:class:`~snecs.Component`]
+
     :return: ID of the newly created entity.
+    :rtype: `EntityID`
     """
     if __debug__:
         unique_ctypes = {c.__class__ for c in components}
@@ -71,22 +103,46 @@ def add_component(
     """
     Add a single component instance to an entity.
 
-    Will throw KeyError if the `Component` type was not registered using
-    `register_component`, or if the entity doesn't exist in the given `World`.
+    .. warning::
+
+        Adding multiple components of the same type to a single entity is
+        invalid.
 
     :param entity_id: ID of the entity to add the Component to.
+    :type entity_id: `EntityID`
+
     :param component: A single Component instances to add to the Entity.
+    :type component: `Component`
+
     :param world: The World holding the entity.
+    :type world: `World`
+
+    :raises KeyError: If the Component type was not registered, or if the
+                      entity doesn't exist in the given World.
+
+    :raises ValueError: If the entity already has a Component of the same type
+                        as the given one.
     """
     entd = world._entities[entity_id]
     cc = component.__class__
-    if __debug__:
-        if cc in entd:
-            raise AssertionError(
-                f"Entity ID {entity_id} already has a {cc} component. Adding "
-                f"multiple components of the same type to one entity is not "
-                f"allowed."
-            )
+    if cc in entd:
+        # Adding multiple components of the same time will break shit. Heavily.
+        #
+        # First of all, all the components of that type other than the
+        # last-added one will be effectively inaccessible, because component
+        # mappings and the query caches are keyed on component types.
+        #
+        # Worse than that, they will also be unremovable - since after
+        # removing a component type from an entity, it's considered to not
+        # longer have a component of that type.
+        #
+        # Instead of dealing with all that, we just explicitly disallow this.
+        # This was an AssertionError previously, but I feel it's important
+        # enough to be a proper runtime check.
+        raise ValueError(
+            f"Tried to add a {cc.__class__.__name__} component to entity "
+            f"{entity_id}, but it already has a component of that type."
+        )
     entd[cc] = component
     world._entity_cache.setdefault(cc, set()).add(entity_id)
     world._entity_bitmasks[entity_id] |= component._bitmask
@@ -100,25 +156,33 @@ def add_components(
     """
     Add components to an entity.
 
-    Will throw KeyError if the `Component` type was not registered using
-    `register_component`, or if the entity doesn't exist in the given `World`.
+    See notes in `add_component`.
 
     :param entity_id: ID of the entity to add the Components to.
+    :type entity_id: `EntityID`
+
     :param components: An iterable of Component instances to add to the Entity.
+    :type components: Iterable[:class:`~snecs.Component`]
+
     :param world: The World holding the entity.
+    :type world: `World`
+
+    :raises KeyError: If any of the Component types was not registered, or if
+                      the entity doesn't exist in the given World.
+
+    :raises ValueError: If the entity already has a Component of the same type
+                        as one of the given ones.
     """
     entd = world._entities[entity_id]
     new_bitmask = ZERO
     entcache = world._entity_cache
     for c in components:
         cc = c.__class__
-        if __debug__:
-            if cc in entd:
-                raise AssertionError(
-                    f"Entity ID {entity_id} already has a {cc} component. "
-                    f"Adding multiple components of the same type to one "
-                    f"entity is not allowed."
-                )
+        if cc in entd:
+            raise ValueError(
+                f"Tried to add a {cc.__class__.__name__} component to entity "
+                f"{entity_id}, but it already has a component of that type."
+            )
         new_bitmask |= c._bitmask
         # Waaay faster than entity.update({cc: c for ...}).
         entd[cc] = c
@@ -132,33 +196,71 @@ def entity_component(
     world: "World" = default_world,
 ) -> "C":
     """
-    Get the `Component` instance of a given type for a specific entity.
+    Get the Component instance of a given type for a specific entity.
 
-    Will throw a KeyError if the entity doesn't have a Component of the
-    given type, or if the entity doesn't exist in this `World`.
+    :param entity_id: ID of the entity to get the Component from.
+    :type entity_id: `EntityID`
 
-    :param entity_id: Entity ID
-    :param component_type: Type of the component to fetch
-    :param world: The `World` to query
-    :return: Component instance
-    :raises KeyError: if the entity doesn't exist in this `World`.
+    :param component_type: Type of the component to fetch.
+    :type component_type: Type[:class:`~snecs.Component`]
+
+    :param world: The World to look up the entity in.
+    :type world: `World`
+
+    :return: The instance of ``component_type`` that's assigned to the entity.
+    :rtype: Instance of ``component_type``
+
+    :raises KeyError: If the entity doesn't exist in this `World` or if it
+                      doesn't have the requested Component.
     """
     return world._entities[entity_id][component_type]  # type: ignore
-    # I know better.
 
 
 def entity_components(
+    entity_id: "EntityID",
+    components: "Iterable[Type[Component]]",
+    world: "World" = default_world,
+) -> "Dict[Type[Component], Component]":
+    """
+    Get the given instances of given Component types for a specific entity.
+
+    :param entity_id: ID of the entity to get the Components from.
+    :type entity_id: `EntityID`
+
+    :param components: An iterable of Component types to look up.
+    :type components: Iterable[Type[:class:`~snecs.Component`]]
+
+    :param world: The World to look up the entity in.
+    :type world: `World`
+
+    :return: A dictionary mapping each given Component type to the instance of
+             that type attached to the given entity. Note that mutations of
+             this dictionary do not affect the world.
+    :rtype: Dict[Type[Component], Component]
+
+    :raises KeyError: If the entity doesn't exist in this `World` or if it
+                      doesn't have any of the requested Components.
+    """
+    entd = world._entities[entity_id]
+    return {cc: entd[cc] for cc in components}
+
+
+def all_components(
     entity_id: "EntityID", world: "World" = default_world
 ) -> "Mapping[Type[Component], Component]":
     """
     Get a mapping of all Components for a specific entity in a given World.
 
-    Will throw a KeyError if the entity doesn't exist in this `World`.
+    :param entity_id: ID of the entity to get the Component from.
+    :type entity_id: `EntityID`
 
-    :param entity_id: Entity ID
-    :param world: The `World` to query
+    :param world: The World to look up the entity in.
+    :type world: `World`
+
     :return: An immutable mapping between each Component type of which the
              entity has an instance, and the instance.
+    :rtype: Mapping[Type[Component], Component]
+
     :raises KeyError: If the entity doesn't exist in this `World`.
     """
     return MappingProxyType(world._entities[entity_id])
@@ -170,18 +272,25 @@ def has_component(
     world: "World" = default_world,
 ) -> "bool":
     """
-    Check if a given entity has a specific `Component`.
-
-    Will throw a KeyError if the entity doesn't exist in this `World`.
+    Check if a given entity has a specific Component.
 
     ::
+
         if not has_component(entity_id, FreezeStatus):
             do_stuff(entity_id)
 
     :param entity_id: ID of the entity to check
-    :param component_type: Component type to check
+    :type entity_id: `EntityID`
+
+    :param component_type: Component type to check for
+    :type component_type: Type[:class:`~snecs.Component`]
+
     :param world: World to check for the entity
-    :return: bool
+    :type world: `World`
+
+    :return: Whether the entity has a component of the given type.
+    :rtype: bool
+
     :raises KeyError: If the entity doesn't exist in this `World`.
     """
     return component_type in world._entities[entity_id]
@@ -193,14 +302,20 @@ def has_components(
     world: "World" = default_world,
 ) -> "bool":
     """
-    Check if a given entity has all of the specified `Component`s.
-
-    Will throw a KeyError if the entity doesn't exist in this `World`.
+    Check if a given entity has all of the specified Components.
 
     :param entity_id: ID of the entity to check
-    :param component_types: Component type to check
+    :type entity_id: `EntityID`
+
+    :param component_types: Iterable of component types to check for
+    :type component_types: Iterable[Type[:class:`~snecs.Component`]]
+
     :param world: World to check for the entity
-    :return: bool
+    :type world: `World`
+
+    :return: Whether the entity has components of all of the given types.
+    :rtype: bool
+
     :raises KeyError: If the entity doesn't exist in this `World`.
     """
     d = world._entities[entity_id]
@@ -213,15 +328,17 @@ def remove_component(
     world: "World" = default_world,
 ) -> "None":
     """
-    Remove the `Component` of a given type from an entity.
+    Remove the component of a given type from an entity.
 
-    Will throw a KeyError if the entity doesn't have a Component of the
-    given type, or if the entity doesn't exist in this `World`.
+    :param entity_id: ID of the entity to remove the component from.
+    :type entity_id: `EntityID`
 
-    :param entity_id: ID of the entity to check
-    :param component_type: Component type to check
-    :param world: World to check for the entity
-    :return: bool
+    :param component_type: Type of the component to remove.
+    :type component_type: Type[:class:`~snecs.Component`]
+
+    :param world: The World to look up the entity in.
+    :type world: `World`
+
     :raises KeyError: If the entity doesn't exist in this `World` or it
                       doesn't have the specified component.
     """
@@ -230,16 +347,19 @@ def remove_component(
     world._entity_bitmasks[entity_id] ^= component_type._bitmask
 
 
-def delete_entity(
+def schedule_for_deletion(
     entity_id: "EntityID", world: "World" = default_world
 ) -> "None":
     """
-    Schedule an entity for deletion from the `World`. Thread-safe.
+    Schedule an entity for deletion from the World. Thread-safe.
 
     The entity will be deleted on the next call to `process_pending_deletions`.
 
     :param entity_id: ID of the entity to schedule for deletion
+    :type entity_id: `EntityID`
+
     :param world: The World to delete the entity from
+    :type world: `World`
     """
     world._entities_to_delete.add(entity_id)
 
@@ -254,7 +374,10 @@ def delete_entity_immediately(
     this `World`.
 
     :param entity_id: ID of the entity to delete
+    :type entity_id: `EntityID`
+
     :param world: The World to delete the entity from
+    :type world: `World`
     """
     ctypes = world._entities.pop(entity_id, ())
     for ct in ctypes:
@@ -266,43 +389,86 @@ def process_pending_deletions(world: "World") -> "None":
     """
     Process pending entity deletions.
 
-    Equivalent to calling `delete_entity_immediately(entity_id)` on all
-    entities for which `delete_entity(entity_id)` had been called for since
-    the last call to `process_pending_deletions`.
+    Equivalent to calling `delete_entity_immediately` on all
+    entities for which `schedule_for_deletion` had been called for since
+    the last call to ``process_pending_deletions``.
 
     Idempotent. *Not* thread-safe.
 
     :param world: The World to delete the entities from
+    :type world: `World`
     """
     for entid in world._entities_to_delete:
         delete_entity_immediately(entid, world)
 
 
+#: See `serialize_world`
 SERIALIZED_COMPONENTS_KEY = 0
+#: See `serialize_world`
 SERIALIZED_ENTITIES_KEY = 1
-_serialized_key_type = int
 
 
 # This, sadly, has to have extremely loose typing until at least PyPy hits 3.8.
 # TypedDict came to `typing` way too late.
 # There's lots of type: ignore here, thanks to that.
-def serialize_world(  # type: ignore
-    world: "World",
-) -> "Dict[_serialized_key_type, Any]":
+def serialize_world(world: "World",) -> "SerializedWorldType":
     """
     Serialize a World and all the Entities and Components inside it.
+
+    **All Component classes in your World must be serializable for this to
+    run.**
 
     Returns a Python dictionary that can be passed to `deserialize_world` to
     reconstruct the serialized world.
 
     You can for example, dump the output of `serialize_world` to a file with
-    `json.dump`, to use as an effortless savegame format.
-    """
-    if not _all_components_serializable:
-        raise ValueError(
-            "Cannot serialize a World if the components aren't serializable."
-        )
+    `json.dump`, to use as an effortless savegame format::
 
+        import json
+
+        def save_to_file(world: World, filename: str):
+            with open(filename, "w") as f:
+                json.dump(serialize_world(world), f)
+
+    The resulting dict looks like this::
+
+        serialized = {
+            SERIALIZED_COMPONENTS_KEY: ["ComponentType1",...],
+            SERIALIZED_ENTITIES_KEY: {
+                entity_id: {
+                    component_idx: serialized_component_data,
+                    ...
+                },
+                entity_id: ...,
+                ...
+            }
+        }
+
+    Where:
+
+    - ``serialized[SERIALIZED_COMPONENTS_KEY]`` is a list of names of the
+      Component classes present in the World.
+    - ``serialized[SERIALIZED_ENTITIES_KEY]`` is a dictionary mapping entity
+      IDs to dictionaries representing their components.
+
+      - Each of the dictionaries in ``serialized[SERIALIZED_ENTITIES_KEY]``
+        maps indices of component types in
+        ``serialized[SERIALIZED_COMPONENTS_KEY]`` to that component's
+        serialized data.
+
+        For example, if ``serialized[SERIALIZED_COMPONENTS_KEY]`` is
+        ``[A, B, C]``, the index ``1`` would indicate that the value is a
+        serialized instance of a ``B`` component.
+
+    :param world: The World to serialize.
+    :type world: `World`
+
+    :return: A serialized dictionary representing this World, which can be
+             deserialized with `deserialize_world`.
+    :rtype: `SerializedWorldType`
+
+    :raise AttributeError: If any component in the World is not serializable.
+    """
     # A mapping of component type names to indices in `component_types`
     reverse_components = {}
     component_types: "List[str]" = []
@@ -325,34 +491,27 @@ def serialize_world(  # type: ignore
     }
 
 
-def deserialize_world(  # type: ignore
-    serialized: "Dict[_serialized_key_type, Any]",
-) -> "World":
+def deserialize_world(serialized: "SerializedWorldType",) -> "World":
     """
-    Deserialize a dictionary as output by `serialize_world` into a `World`.
+    Deserialize the output of `serialize_world` into a new `World`.
 
     If any of the component types that were registered in the serialized World
     are not registered when you call `deserialize_world`, or any of them
     have been renamed, this will fail and raise a ValueError.
 
-    :return: World
-    """
-    if not _all_components_serializable:
-        raise ValueError(
-            "Cannot deserialize a World if the components aren't "
-            "deserializable."
-        )
+    :param serialized: A serialized world, as output by `serialize_world`.
+    :type serialized: `SerializedWorldType`
 
+    :return: A new World with the data from the serialized one.
+    :rtype: `World`
+    """
     world = World()
-    serialized_names = cast(
-        "List[str]", serialized[SERIALIZED_COMPONENTS_KEY]  # type: ignore
-    )
+    serialized_names = cast("List[str]", serialized[SERIALIZED_COMPONENTS_KEY])
     component_types: "List[Type[Component]]" = [
         _component_names[name] for name in serialized_names
     ]
     serialized_entities = cast(
-        "Dict[EntityID, Dict[int, str]]",
-        serialized[SERIALIZED_ENTITIES_KEY],  # type: ignore
+        "Dict[EntityID, Dict[int, str]]", serialized[SERIALIZED_ENTITIES_KEY]
     )
     for ent_id, components in serialized_entities.items():
         cmp_instances = [

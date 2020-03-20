@@ -1,3 +1,8 @@
+# Copyright (c) 2020 Slavfox
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
 Query builder.
 """
@@ -18,12 +23,13 @@ if TYPE_CHECKING:
         Collection,
     )
     from snecs.component import Component
-    from snecs.world import EntityID, World
+    from snecs.world import World
+    from snecs.types import EntityID
     from snecs._filters import Term, CompiledFilter
 
     QueryRow = Tuple[EntityID, List[Component]]
     QueryIterator = Iterator[QueryRow]
-    DQ = TypeVar("DQ", bound="query")
+    DQ = TypeVar("DQ", bound="Query")
 
     T = TypeVar("T")
 
@@ -38,7 +44,7 @@ else:
     set_intersection = set.intersection
 
 
-__all__ = ["query"]
+__all__ = ["Query"]
 
 _EMPTY_SET: "AbstractSet[EntityID]" = frozenset()
 
@@ -135,7 +141,7 @@ class CompiledRawQuery(CompiledQuery):
             yield entid, [entcmps[c] for c in cmptypes]
 
 
-class query(BaseQuery):
+class Query(BaseQuery):
     """
     An expression for querying the world for entities and Components.
 

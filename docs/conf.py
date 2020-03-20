@@ -1,24 +1,78 @@
 import configparser
 import datetime
+import inspect
+import sys
+from os.path import relpath
 from pathlib import Path
+
+import snecs
+import toml
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+with (_REPO_ROOT / "pyproject.toml").open() as f:
+    _pyproject = toml.load(f)
 
 project = "snecs"
 copyright = f"{datetime.date.today().year}, Slavfox"
 author = "Slavfox"
-_config = configparser.ConfigParser()
-_config.read(Path(__file__).resolve().parent.parent / "setup.cfg")
-version = release = _config["bumpversion"]["current_version"]
-del _config
+version = release = _pyproject["tool"]["poetry"]["version"]
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.intersphinx"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.linkcode",
+    "sphinx.ext.githubpages",
+]
 templates_path = ["_templates"]
 exclude_patterns = ["_build"]
 html_theme = "alabaster"
 html_static_path = ["_static"]
 html_favicon = "_static/favicon.png"
 html_logo = "_static/snecs_logo_bw.png"
+html_baseurl = "https://snecs.slavfox.io/"
 default_role = "any"
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+autodoc_typehints = "description"
+
+# Based on numpy code:
+# https://github.com/numpy/numpy/blob/master/doc/source/conf.py#L328
+def linkcode_resolve(domain, info):
+    if domain != "py":
+        return None
+
+    module = info["module"]
+    fullname = info["fullname"]
+
+    obj = sys.modules.get(module)
+    if not obj:
+        return None
+
+    for elem in fullname.split("."):
+        try:
+            obj = getattr(obj, elem)
+        except Exception:
+            return None
+
+    try:
+        sourcefile = inspect.getsourcefile(obj)
+    except Exception:
+        sourcefile = None
+
+    if not sourcefile:
+        return None
+
+    linenos = ""
+    try:
+        source, lineno = inspect.getsourcelines(obj)
+    except Exception:
+        lineno = None
+    else:
+        if lineno:
+            linenos = f"#L{lineno}-L{lineno + len(source) - 1}"
+
+    filepath = Path(sourcefile).relative_to(_REPO_ROOT)
+
+    return f"https://github.com/slavfox/snecs/tree/master/{filepath}{linenos}"
 
 
 def setup(app):
