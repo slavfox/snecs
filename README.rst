@@ -18,7 +18,6 @@ heavily inspired by Rust’s
 `Legion <https://github.com/TomGillen/legion>`__, and aiming to be as
 fast and easy-to-use as possible.
 
-
 .. |PyPI badge| image:: https://img.shields.io/pypi/v/snecs
    :alt: PyPI
    :target: https://pypi.org/project/snecs/
@@ -38,6 +37,9 @@ fast and easy-to-use as possible.
    :target: https://github.com/slavfox/snecs/blob/master/LICENSE
 
 .. teaser-end
+
+Scroll down to learn more, or `check out the documentation!
+<https://snecs.slavfox.space>`_
 
 Contents
 ========

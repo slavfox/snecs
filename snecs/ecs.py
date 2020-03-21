@@ -32,7 +32,7 @@ from snecs.world import World, default_world
 if TYPE_CHECKING:
     from typing import Type, Iterable, TypeVar, Mapping, Dict, Any, List
     from snecs.component import Component
-    from snecs.types import EntityID, SerializedWorldType
+    from snecs.typedefs import EntityID, SerializedWorldType
 
     C = TypeVar("C", bound=Component)
 
@@ -52,7 +52,7 @@ __all__ = [
     "serialize_world",
     "deserialize_world",
     "SERIALIZED_COMPONENTS_KEY",
-    "SERIALIZED_ENTITIES_KEY"
+    "SERIALIZED_ENTITIES_KEY",
 ]
 
 
@@ -63,7 +63,7 @@ def new_entity(
     Create an entity in a World with the given Components, returning its ID.
 
     :param world: World to create the entity in.
-    :type world: :class:`~snecs.World`
+    :type world: Optional[`World`]
 
     :param components: An iterable of Component instances to attach to the
                        entity.
@@ -115,7 +115,7 @@ def add_component(
     :type component: `Component`
 
     :param world: The World holding the entity.
-    :type world: `World`
+    :type world: Optional[`World`]
 
     :raises KeyError: If the Component type was not registered, or if the
                       entity doesn't exist in the given World.
@@ -165,7 +165,7 @@ def add_components(
     :type components: Iterable[:class:`~snecs.Component`]
 
     :param world: The World holding the entity.
-    :type world: `World`
+    :type world: Optional[`World`]
 
     :raises KeyError: If any of the Component types was not registered, or if
                       the entity doesn't exist in the given World.
@@ -205,7 +205,7 @@ def entity_component(
     :type component_type: Type[:class:`~snecs.Component`]
 
     :param world: The World to look up the entity in.
-    :type world: `World`
+    :type world: Optional[`World`]
 
     :return: The instance of ``component_type`` that's assigned to the entity.
     :rtype: Instance of ``component_type``
@@ -231,7 +231,7 @@ def entity_components(
     :type components: Iterable[Type[:class:`~snecs.Component`]]
 
     :param world: The World to look up the entity in.
-    :type world: `World`
+    :type world: Optional[`World`]
 
     :return: A dictionary mapping each given Component type to the instance of
              that type attached to the given entity. Note that mutations of
@@ -255,7 +255,7 @@ def all_components(
     :type entity_id: `EntityID`
 
     :param world: The World to look up the entity in.
-    :type world: `World`
+    :type world: Optional[`World`]
 
     :return: An immutable mapping between each Component type of which the
              entity has an instance, and the instance.
@@ -286,7 +286,7 @@ def has_component(
     :type component_type: Type[:class:`~snecs.Component`]
 
     :param world: World to check for the entity
-    :type world: `World`
+    :type world: Optional[`World`]
 
     :return: Whether the entity has a component of the given type.
     :rtype: bool
@@ -311,7 +311,7 @@ def has_components(
     :type component_types: Iterable[Type[:class:`~snecs.Component`]]
 
     :param world: World to check for the entity
-    :type world: `World`
+    :type world: Optional[`World`]
 
     :return: Whether the entity has components of all of the given types.
     :rtype: bool
@@ -337,7 +337,7 @@ def remove_component(
     :type component_type: Type[:class:`~snecs.Component`]
 
     :param world: The World to look up the entity in.
-    :type world: `World`
+    :type world: Optional[`World`]
 
     :raises KeyError: If the entity doesn't exist in this `World` or it
                       doesn't have the specified component.
@@ -359,7 +359,7 @@ def schedule_for_deletion(
     :type entity_id: `EntityID`
 
     :param world: The World to delete the entity from
-    :type world: `World`
+    :type world: Optional[`World`]
     """
     world._entities_to_delete.add(entity_id)
 
@@ -377,7 +377,7 @@ def delete_entity_immediately(
     :type entity_id: `EntityID`
 
     :param world: The World to delete the entity from
-    :type world: `World`
+    :type world: Optional[`World`]
     """
     ctypes = world._entities.pop(entity_id, ())
     for ct in ctypes:
@@ -385,7 +385,7 @@ def delete_entity_immediately(
     world._entity_bitmasks.pop(entity_id, None)
 
 
-def process_pending_deletions(world: "World") -> "None":
+def process_pending_deletions(world: "World" = default_world) -> "None":
     """
     Process pending entity deletions.
 
@@ -396,7 +396,7 @@ def process_pending_deletions(world: "World") -> "None":
     Idempotent. *Not* thread-safe.
 
     :param world: The World to delete the entities from
-    :type world: `World`
+    :type world: Optional[`World`]
     """
     for entid in world._entities_to_delete:
         delete_entity_immediately(entid, world)
@@ -411,7 +411,7 @@ SERIALIZED_ENTITIES_KEY = 1
 # This, sadly, has to have extremely loose typing until at least PyPy hits 3.8.
 # TypedDict came to `typing` way too late.
 # There's lots of type: ignore here, thanks to that.
-def serialize_world(world: "World",) -> "SerializedWorldType":
+def serialize_world(world: "World" = default_world) -> "SerializedWorldType":
     """
     Serialize a World and all the Entities and Components inside it.
 
@@ -461,7 +461,7 @@ def serialize_world(world: "World",) -> "SerializedWorldType":
         serialized instance of a ``B`` component.
 
     :param world: The World to serialize.
-    :type world: `World`
+    :type world: Optional[`World`]
 
     :return: A serialized dictionary representing this World, which can be
              deserialized with `deserialize_world`.
@@ -491,7 +491,10 @@ def serialize_world(world: "World",) -> "SerializedWorldType":
     }
 
 
-def deserialize_world(serialized: "SerializedWorldType",) -> "World":
+def deserialize_world(
+    serialized: "SerializedWorldType",
+    name: str = None
+) -> "World":
     """
     Deserialize the output of `serialize_world` into a new `World`.
 
@@ -502,10 +505,13 @@ def deserialize_world(serialized: "SerializedWorldType",) -> "World":
     :param serialized: A serialized world, as output by `serialize_world`.
     :type serialized: `SerializedWorldType`
 
+    :param name: An optional name to use for the new World. See `World`.
+    :type name: Optional[str]
+
     :return: A new World with the data from the serialized one.
     :rtype: `World`
     """
-    world = World()
+    world = World(name=name)
     serialized_names = cast("List[str]", serialized[SERIALIZED_COMPONENTS_KEY])
     component_types: "List[Type[Component]]" = [
         _component_names[name] for name in serialized_names

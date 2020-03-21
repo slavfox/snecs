@@ -17,7 +17,7 @@ from snecs.ecs import (
     remove_component,
     schedule_for_deletion,
 )
-from snecs.types import EntityID
+from snecs.typedefs import EntityID
 from snecs.world import World
 
 

@@ -82,7 +82,7 @@ lint: $(VENV_SITE_PACKAGES)/flake8 $(VENV_SITE_PACKAGES)/isort
 $(VENV_SITE_PACKAGES)/%:
 	@printf "$(INFO) Installing dev dependencies.$(NC)\n"
 	@poetry install
-	@pip install git+https://github.com/PyCQA/astroid.git
+	@./fix_astroid.sh
 	@printf "$(INFO) Done.$(NC)\n"
 
 docs: $(VENV_SITE_PACKAGES)/sphinxcontrib

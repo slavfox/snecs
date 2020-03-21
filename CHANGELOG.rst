@@ -1,3 +1,5 @@
+.. _snecs_changelog:
+
 =========
 Changelog
 =========
@@ -5,8 +7,28 @@ Changelog
 Unreleased
 ==========
 
+Changes
+-------
+
+- ``World.__init__()`` now accepts an optional ``name`` argument.
+
+  Named worlds can be looked up by name when an explicit reference to them is
+  not available, using the new class method ``World.get_by_name(name)``.
+
+  The name is used in ``__repr__``.
+
+- The ``world`` argument to `process_pending_deletions`, `serialize_world`,
+  and `deserialize_world` is now optional with a default of the default_world.
+
+  This is to bring those functions in-line with all the other ones, and
+  allow full "``World()``-less" usage of ``snecs``.
+
+
 Backwards-incompatible Changes
 ------------------------------
+
+- Renamed ``snecs.types`` to ``snecs.typedefs`` to avoid name clashes with
+  the standard library module ``types``.
 
 - Moved `EntityID` to ``snecs.types``.
 

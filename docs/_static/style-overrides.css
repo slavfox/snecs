@@ -7,6 +7,6 @@
     text-align: center;
 }
 
-.body h1, .body h2 {
-    font-family: "xkcd-script" !important;
+#api-reference .section h2, #changelog h3 {
+    font-family: "Garamond", "Georgia", serif !important;
 }

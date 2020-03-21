@@ -229,13 +229,14 @@ class ExprCompiler:
     ) -> "CompiledFilter":
         clauses = self.clauses
         if not self.clauses:
+            # W0613 = "Unused argument"
             # FalseExpr
-            def match(_: object, bitmask: "Bitmask") -> bool:
+            def match(_: object, bitmask: "Bitmask") -> bool:  # noqa: W0613
                 return False
 
         elif len(self.clauses) == 1 and self.clauses[0][0] == 0:
             # TrueExpr
-            def match(_: object, bitmask: "Bitmask") -> bool:
+            def match(_: object, bitmask: "Bitmask") -> bool:  # noqa: W0613
                 return True
 
         elif len(self.clauses) == 1:

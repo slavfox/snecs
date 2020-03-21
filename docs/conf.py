@@ -1,11 +1,8 @@
-import configparser
 import datetime
 import inspect
 import sys
-from os.path import relpath
 from pathlib import Path
 
-import snecs
 import toml
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -16,7 +13,7 @@ project = "snecs"
 copyright = f"{datetime.date.today().year}, Slavfox"
 author = "Slavfox"
 version = release = _pyproject["tool"]["poetry"]["version"]
-
+repo = "https://github.com/slavfox/snecs"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
@@ -28,8 +25,19 @@ exclude_patterns = ["_build"]
 html_theme = "alabaster"
 html_static_path = ["_static"]
 html_favicon = "_static/favicon.png"
-html_logo = "_static/snecs_logo_bw.png"
-html_baseurl = "https://snecs.slavfox.io/"
+html_logo = None
+html_baseurl = "https://snecs.slavfox.space/"
+html_theme_options = {
+    'logo': 'snecs_logo_bw.png',
+    'canonical_url': html_baseurl,
+    'fixed_sidebar': True,
+    'touch_icon': 'apple_touch_icon.png',
+    'extra_nav_links': {
+        "GitHub repo": repo
+    },
+    "show_relbars": True,
+    "head_font_family": "xkcd-script",
+}
 default_role = "any"
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 autodoc_typehints = "description"
@@ -72,7 +80,7 @@ def linkcode_resolve(domain, info):
 
     filepath = Path(sourcefile).relative_to(_REPO_ROOT)
 
-    return f"https://github.com/slavfox/snecs/tree/master/{filepath}{linenos}"
+    return f"{repo}/tree/master/{filepath}{linenos}"
 
 
 def setup(app):

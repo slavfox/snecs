@@ -6,14 +6,14 @@
 """
 Base Component classes and the functions necessary to make them work.
 """
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 from abc import ABC, ABCMeta
 
 from snecs._detail import Bitmask, InvariantDict
 from snecs._filters import AndExpr, Expr, NotExpr, OrExpr
 
 if TYPE_CHECKING:
-    from typing import Type, Any, Dict
+    from typing import Type, Any, Dict, TypeVar
     from snecs._filters import Term
 
     CType = TypeVar("CType", bound="Component")
@@ -76,6 +76,27 @@ class Component(ABC, metaclass=ComponentMeta):
     Base and abstract Component classes don't have to be registered, as long as
     you're not going to instantiate them.
 
+    Other than that, there are no restrictions on what Components should be.
+    They can be anything as simple as an integer::
+
+        @register_component
+        class IntComponent(int, Component):
+            pass
+
+    Or as complex as you want::
+
+        @register_component
+        class BigComponent(Component):
+            __slots__ = ('a', 'b', 'c', 'd', ...)
+
+            def __init__(a, b, c, d, ...):
+                ...
+
+            def __str__(self):
+                ...
+
+            ...
+
     If you want to use the snecs full-world serialization and make your
     typing extra tight, you should override `serialize` and `deserialize` in
     *all* your registered Components::
@@ -121,7 +142,7 @@ class Component(ABC, metaclass=ComponentMeta):
         """
         Deserialize a serialized instance of this component.
 
-        Gets the output of `serialize` as an argument.
+        Will get the output of `serialize` as an argument.
 
         Override this in all your Component classes to make use of snecs'
         full-World serialization feature.
@@ -251,6 +272,9 @@ class RegisteredComponent(Component):
     components with `register_component`, though.
     """
 
-    def __init_subclass__(cls) -> "None":
+    def __init_subclass__(cls: "Type[RegisteredComponent]") -> "None":
+        """
+        Automagically call `register_component` on subclasses.
+        """
         super().__init_subclass__()
         register_component(cls)

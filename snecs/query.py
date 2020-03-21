@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     )
     from snecs.component import Component
     from snecs.world import World
-    from snecs.types import EntityID
+    from snecs.typedefs import EntityID
     from snecs._filters import Term, CompiledFilter
 
     QueryRow = Tuple[EntityID, List[Component]]
