@@ -92,6 +92,11 @@ clean:
 	rm -rf $(DOCS_DIR)/_build/*
 
 test: $(VENV_SITE_PACKAGES)/pytest
-	poetry run pytest --cov=$(SRC_DIR) --cov-report html --tb=short tests
+	poetry run pytest \
+		--ignore=tests/test_benchmarks.py \
+		--benchmark-disable \
+		--cov=$(SRC_DIR) \
+		--cov-report html \
+		--tb=short tests
 
 check: lint test

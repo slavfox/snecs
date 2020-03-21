@@ -9,7 +9,15 @@ from types import new_class
 
 import pytest
 from snecs._detail import Bitmask
-from snecs._filters import AndExpr, NotExpr, OrExpr, compile_filter, matches
+from snecs._filters import (
+    AndExpr,
+    FalseExpr,
+    NotExpr,
+    OrExpr,
+    TrueExpr,
+    compile_filter,
+    matches,
+)
 from snecs.component import Component
 
 
@@ -206,7 +214,8 @@ def test_filter_str(expr, s):
     "expr, s",
     [
         (~A, "~A"),
-        (A & ~A, "A & (~A)"),
+        (~A & A, "false"),
+        (A & ~A, "false"),
         (A & B, "A & B"),
         (A & B & C, "A & B & C"),
         (A | B, "A | B"),
@@ -217,9 +226,31 @@ def test_filter_str(expr, s):
         (~(~A & ~B), "A | B"),
         (~(A | B), "(~A) & (~B)"),
         (~(A & B), "(~A) | (~B)"),
+        (~A | A, "true"),
         (A | ~A, "true"),
         ((A & ~B) | (~A & B), "(A & (~B)) | ((~A) & B)"),
     ],
 )
 def test_filter_str(expr, s):
     assert str(expr) == s
+
+
+def test_true_expr():
+    expr = A | ~A
+    assert expr is TrueExpr
+    assert expr == B | ~B
+    assert hash(expr)  # make sure is hashable
+    assert ~expr is FalseExpr
+    assert expr | B == expr
+    assert expr & B == B
+    assert expr != True
+
+
+def test_false_expr():
+    expr = A & ~A
+    assert expr is FalseExpr
+    assert expr == B & ~B
+    assert hash(expr)  # make sure is hashable
+    assert ~expr is TrueExpr
+    assert expr | B == B
+    assert expr & B == expr

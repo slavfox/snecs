@@ -5,13 +5,17 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import pytest
 from snecs.component import Component, register_component
+from snecs.ecs import new_entity
+from snecs.world import World
 
 
 @pytest.fixture
 def component_a():
     @register_component
     class AComponent(Component):
-        pass
+        # for easier comparing of Worlds
+        def __copy__(self):
+            return self
 
     return AComponent
 
@@ -20,6 +24,77 @@ def component_a():
 def component_b():
     @register_component
     class BComponent(Component):
-        pass
+        def __copy__(self):
+            return self
 
     return BComponent
+
+
+@pytest.fixture
+def serializable_component_a():
+    @register_component
+    class SerializableComponentA(Component):
+        def __init__(self, x):
+            self.x = x
+
+        def __copy__(self):
+            return self
+
+        def serialize(self):
+            return self.x
+
+        @classmethod
+        def deserialize(cls, serialized):
+            return cls(serialized)
+
+    return SerializableComponentA
+
+
+@pytest.fixture
+def serializable_component_b():
+    @register_component
+    class SerializableComponentB(Component):
+        def __init__(self, x, y):
+            self.x = x
+            self.y = y
+
+        def __copy__(self):
+            return self
+
+        def serialize(self):
+            return self.x, self.y
+
+        @classmethod
+        def deserialize(cls, serialized):
+            return cls(*serialized)
+
+    return SerializableComponentB
+
+
+@pytest.fixture
+def world():
+    return World()
+
+
+@pytest.fixture
+def empty_entity(world):
+    return new_entity(world=world)
+
+
+@pytest.fixture
+def entity_with_cmp_a(world, component_a):
+    return new_entity((component_a(),), world=world)
+
+
+@pytest.fixture
+def missing_dunder_all_names():
+    def make_missing(module):
+        return [
+            name
+            for name in dir(module)
+            if not name.startswith("_")
+            and name not in ["TYPE_CHECKING"]
+            and name not in module.__all__
+        ]
+
+    return make_missing

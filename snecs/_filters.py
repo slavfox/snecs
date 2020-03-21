@@ -478,21 +478,33 @@ class NotExpr(DynExpr):
     def _get_component_compiler(self, term: "ComponentMeta") -> ExprCompiler:
         return ExprCompiler(clauses=[(term._bitmask, ZERO)])
 
-    def _extend_compiler(self, matcher: "ExprCompiler") -> "NoReturn":
-        raise TypeError("NotExpr._extend_matcher intentionally omitted.")
+    def _extend_compiler(
+        self, matcher: "ExprCompiler"
+    ) -> "NoReturn":  # pragma: no cover
+        raise TypeError("NotExpr._extend_compiler intentionally omitted.")
 
     def __invert__(self) -> "Term":
         return self.terms[0]
 
     def __or__(self, other: "Term") -> "Term":
-        if other == ~self:
+        if other == self.terms[0]:
             return TrueExpr
         return super().__or__(other)
 
     def __ror__(self, other: "Term") -> "Term":
-        if other == ~self:
+        if other == self.terms[0]:
             return TrueExpr
-        return super().__or__(other)
+        return super().__ror__(other)
+
+    def __and__(self, other: "Term") -> "Term":
+        if other == ~self:
+            return FalseExpr
+        return super().__and__(other)
+
+    def __rand__(self, other: "Term") -> "Term":
+        if other == ~self:
+            return FalseExpr
+        return super().__rand__(other)
 
     def __str__(self) -> "str":
         return f"~{_format_expr_term(self.terms[0])}"

@@ -187,14 +187,14 @@ def _overrides_deserialize(cls: "Type[Component]") -> "bool":
     # check:
     if (
         getattr(cls.deserialize, "__func__", None)  # type: ignore
-        is Component.deserialize  # type: ignore
+        is Component.deserialize.__func__  # type: ignore
     ):
         # and if so,
-        return True
+        return False
     # Otherwise, if we landed here, we know that `deserialize` is not a
     # classmethod, *or* it's a classmethod different from Component.serialize.
     # Either way, it's not the base implementation, so we happily
-    return False
+    return True
 
 
 def register_component(component: "Type[CType]") -> "Type[CType]":
@@ -239,6 +239,7 @@ def register_component(component: "Type[CType]") -> "Type[CType]":
             f"register a serializable Component class with a non-unique name."
         )
     bitmask = _component_registry.add(component)
+    _component_names[cn] = component
     component._bitmask = bitmask
     return component
 

@@ -21,16 +21,15 @@ if TYPE_CHECKING:
 
         __slots__ = ()
 
-        if TYPE_CHECKING:
+        def __add__(self, other: "int") -> "EntityID":  # noqa D105
+            ...
 
-            def __add__(self, other: "int") -> "EntityID":
-                ...
-
-            def __iadd__(self, other: "int") -> "EntityID":
-                ...
+        def __iadd__(self, other: "int") -> "EntityID":  # noqa D105
+            ...
 
 
 else:
+    #: Effectively an integer `typing.NewType` that only allows incrementation.
     EntityID = int
 
 

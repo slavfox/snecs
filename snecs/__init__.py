@@ -25,6 +25,7 @@ from snecs.ecs import (
     remove_component,
     schedule_for_deletion,
     serialize_world,
+    exists,
 )
 from snecs.query import Query
 from snecs.world import World
@@ -49,6 +50,7 @@ __all__ = [
     "process_pending_deletions",
     "serialize_world",
     "deserialize_world",
+    "exists",
     "Query",
 ]
 

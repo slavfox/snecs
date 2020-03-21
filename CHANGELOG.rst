@@ -7,6 +7,21 @@ Changelog
 Unreleased
 ==========
 
+Fixes
+-----
+
+- Fixed a critical bug that caused ``process_pending_deletions`` to never
+  actually remove the entities from the deletion queue, thus making every
+  subsequent call fail.
+
+- Fixed a critical bug in ``register_component`` that prevented actually
+  implementing ``Component.serialize`` and ``Component.deserialize``, because
+  it never detected a class as overriding ``deserialize``.
+
+- Fixed another critical bug in ``register_component`` that prevented
+  Component names being registered, and so made it impossible to deserialize
+  a World.
+
 Changes
 -------
 

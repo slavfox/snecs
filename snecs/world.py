@@ -19,6 +19,7 @@ __all__ = ["World", "default_world"]
 
 DEFAULT_WORLD_NAME = "DEFAULT"
 
+
 class World:
     """
     A container for all your entities, components and systems.
@@ -31,7 +32,7 @@ class World:
     :type name: str
     """
 
-    _instances = {}
+    _instances: "Dict[str, World]" = {}
 
     __slots__ = (
         "_entity_counter",
@@ -44,6 +45,8 @@ class World:
 
     def __init__(self, name: "Optional[str]" = None) -> None:
         if name:
+            # We explicitly use World, and not self.__class__ here, to let
+            # users still find World subclasses with World.get_by_name.
             if name in World._instances:
                 raise ValueError(
                     f"A world with the name {name} already exists."
@@ -68,16 +71,30 @@ class World:
             return f"<World {id(self)} ({self._entity_counter} entities)>"
 
     @classmethod
-    def get_by_name(cls, name: str = DEFAULT_WORLD_NAME):
+    def get_by_name(cls, name: str) -> "World":
         """
         Get a World instance by name.
 
-        This is obviously slower than just passing the World around,
+        This is obviously slower than just passing the World around, but it
+        might sometimes be useful for avoiding circular imports. The
+        preferred workflow is still to have one module that only imports
+        from ``snecs`` and instantiates the world::
 
-        :param name:
-        :return:
+            from snecs import World
+
+            my_world = World()
+
+        And import ``my_world`` from there.
+
+        :param name: Name of the `World` instance to get.
+        :type name: str
+
+        :return: The World with the given name, if it exists.
+        :rtype: `World`
+
+        :raises KeyError: If there is no World with the given name.
         """
-        return
+        return World._instances[name]
 
 
 #: The default World, used if you don't explicitly pass one.

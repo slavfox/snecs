@@ -28,13 +28,11 @@ html_favicon = "_static/favicon.png"
 html_logo = None
 html_baseurl = "https://snecs.slavfox.space/"
 html_theme_options = {
-    'logo': 'snecs_logo_bw.png',
-    'canonical_url': html_baseurl,
-    'fixed_sidebar': True,
-    'touch_icon': 'apple_touch_icon.png',
-    'extra_nav_links': {
-        "GitHub repo": repo
-    },
+    "logo": "snecs_logo_bw.png",
+    "canonical_url": html_baseurl,
+    "fixed_sidebar": True,
+    "touch_icon": "apple_touch_icon.png",
+    "extra_nav_links": {"GitHub repo": repo},
     "show_relbars": True,
     "head_font_family": "xkcd-script",
 }
