@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import pytest
-from snecs.component import Component, register_component
+from snecs.component import Component, RegisteredComponent, register_component
 from snecs.ecs import new_entity
 from snecs.world import World
 
@@ -98,3 +98,31 @@ def missing_dunder_all_names():
         ]
 
     return make_missing
+
+
+@pytest.fixture
+def query_setup():
+    world = World()
+
+    class Cmp1(RegisteredComponent):
+        pass
+
+    class Cmp2(RegisteredComponent):
+        pass
+
+    class Cmp3(RegisteredComponent):
+        pass
+
+    for components in [
+        (),
+        (Cmp1,),
+        (Cmp2,),
+        (Cmp1, Cmp2),
+        (Cmp3,),
+        (Cmp3, Cmp1),
+        (Cmp3, Cmp2),
+        (Cmp3, Cmp2, Cmp1),
+    ]:
+        new_entity([c() for c in components], world=world)
+
+    return world, (Cmp1, Cmp2, Cmp3)

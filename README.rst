@@ -13,7 +13,7 @@ A straightforward, nimble ECS for Python.
 |PyPI badge| |PyVersion badge| |PyImplementation badge| |Mypy badge| |License badge|
 
 ``snecs`` is a pure Python 3.6+, dependency-free
-`ECS <https://en.wikipedia.org/wiki/Entity_component_system>`__ library,
+`ECS <https://snecs.slavfox.space/ecs/>`__ library,
 heavily inspired by Rust’s
 `Legion <https://github.com/TomGillen/legion>`__, and aiming to be as
 fast and easy-to-use as possible.
@@ -40,13 +40,6 @@ fast and easy-to-use as possible.
 
 Scroll down to learn more, or `check out the documentation!
 <https://snecs.slavfox.space>`_
-
-Contents
-========
-
--  `Overview <#overview>`__
--  Other stuff to come…
--  `License <#license>`__
 
 Overview
 ========

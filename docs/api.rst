@@ -106,14 +106,17 @@ parts of your code that use ``snecs``:
 
 .. class:: snecs.types.Expr
 
-   The abstract base class for all `filter expressions`::
+   The abstract base class for `filter expressions`::
 
        def foo(e: Expr) -> ...:
            ...
 
+       # `ComponentA & ComponentB` and all other filter expressions are of
+       # type `Expr`.
        foo(ComponentA & ComponentB)  # ok!
        foo(~ComponentC | (ComponentA & Component))  # ok!
 
+       # `ComponentA` is of type `Type[Component]`
        foo(ComponentA)  # error!
 
    Note that filter expressions accept lone component types - the type of

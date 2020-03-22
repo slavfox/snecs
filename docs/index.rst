@@ -48,7 +48,7 @@ Poetry_:
 Overview
 ========
 
-The main part of documentation is :ref:`a_guided_tour_of_snecs`, which is
+The main part of this documentation is :ref:`a_guided_tour_of_snecs`, which is
 structured into sections of increasing technical detail. It's written
 manually, and intended as a gentle introduction to the library and
 underlying design pattern that doesn't require or presume familiarity with the

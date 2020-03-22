@@ -97,9 +97,9 @@ class Component(ABC, metaclass=ComponentMeta):
 
             ...
 
-    If you want to use the snecs full-world serialization and make your
-    typing extra tight, you should override `serialize` and `deserialize` in
-    *all* your registered Components::
+    If you want to use the snecs full-world serialization, you should
+    override `serialize` and `deserialize` in *all* your registered
+    Components::
 
         @register_component
         class IntPairComponent(Component):
@@ -230,7 +230,7 @@ def register_component(component: "Type[CType]") -> "Type[CType]":
     elif has_deserialize:
         raise TypeError(
             f"Component class {cn} has an overriden `deserialize()` but does "
-            f"not define `serialize()`. You must implement either both or "
+            f"not override `serialize()`. You must implement either both or "
             f"neither of those methods in registered component classes."
         )
     if cn in _component_names and serializable:

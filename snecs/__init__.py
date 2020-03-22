@@ -18,6 +18,7 @@ from snecs.ecs import (
     deserialize_world,
     entity_component,
     entity_components,
+    exists,
     has_component,
     has_components,
     new_entity,
@@ -25,7 +26,6 @@ from snecs.ecs import (
     remove_component,
     schedule_for_deletion,
     serialize_world,
-    exists,
 )
 from snecs.query import Query
 from snecs.world import World
@@ -54,5 +54,5 @@ __all__ = [
     "Query",
 ]
 
-__version_info__ = ("0", "2", "0")
+__version_info__ = ("1", "0", "0")
 __version__ = ".".join(__version_info__)

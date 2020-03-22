@@ -14,6 +14,7 @@ from snecs.world import default_world
 
 if TYPE_CHECKING:
     from typing import (
+        Any,
         Tuple,
         Optional,
         Type,
@@ -75,6 +76,17 @@ class CompiledQuery(BaseQuery, ABC):
     """
 
     __slots__ = ()
+
+
+class EmptyCompiledQuery(CompiledQuery):
+    __slots__ = ()
+
+    def __iter__(self) -> "QueryIterator":
+        return
+        yield  # type: ignore # noqa: W0101
+        # The presence of a `yield` marks the function of a generator. This
+        # is correct; a lone `return` would not work for defining an empty
+        # generator.
 
 
 class CompiledFilterQuery(CompiledQuery):
@@ -173,6 +185,27 @@ class Query(BaseQuery):
 
     __slots__ = ("_filters",)
 
+    def __new__(  # type: ignore
+        cls,  # noqa: W0613
+        component_types: "Collection[Type[Component]]",
+        *args: "Any",
+        **kwargs: "Any",
+    ) -> "Query":
+        """
+        Instantiate a new query.
+
+        If component_types is empty, return an EmptyQuery.
+
+        :param component_types: Component types to query for.
+        :type component_types: Collection[Type[Component]]
+        """
+        if not component_types:
+            # Explicitly defer to object.__new__ to avoid a recursive call
+            # to Query.__new__, which EmptyQuery inherits
+            return object.__new__(EmptyQuery)  # type: ignore
+        else:
+            return super().__new__(cls)  # type: ignore
+
     def __init__(
         self,
         component_types: "Collection[Type[Component]]",
@@ -209,7 +242,9 @@ class Query(BaseQuery):
                 for entity, (Position, Velocity) in momentum_query:
                     ...
         """
-        if self._filters is None:
+        if not self.component_types:
+            return EmptyCompiledQuery(self.component_types, world=self.world)
+        elif self._filters is None:
             return CompiledRawQuery(self.component_types, world=self.world)
         return CompiledFilterQuery(
             self.component_types, compile_filter(self._filters), self.world
@@ -247,3 +282,18 @@ class Query(BaseQuery):
             for entid in valid_entities:
                 entcmps = entities[entid]
                 yield entid, [entcmps[c] for c in cmptypes]
+
+
+class EmptyQuery(Query):
+    """
+    An empty query that will never return results.
+    """
+
+    __slots__ = ()
+
+    def __iter__(self) -> "QueryIterator":
+        return
+        yield  # type: ignore # noqa: W0101
+
+    def compile(self) -> "CompiledQuery":
+        return EmptyCompiledQuery(self.component_types, self.world)

@@ -379,7 +379,7 @@ def schedule_for_deletion(
     .. warning::
 
         This will **not** raise an error if the entity doesn't exist.
-        However, calling this with for an entity that isn't in the World
+        However, calling this with an entity ID that isn't in the World
         will put the World into an unrecoverable state - all later calls to
         `process_pending_deletions` will fail.
 
