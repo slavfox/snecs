@@ -4,6 +4,15 @@
 Changelog
 =========
 
+v1.2.0
+======
+
+Changes
+-------
+
+* Added a ``move_world`` function that replaces the data in a target world
+  with the data from a source world.
+
 v1.1.1
 ======
 

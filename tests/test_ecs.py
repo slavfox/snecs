@@ -3,9 +3,9 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
+import json
 from copy import copy, deepcopy
 
-import json
 import pytest
 import snecs.ecs
 from snecs.ecs import (
@@ -21,6 +21,7 @@ from snecs.ecs import (
     exists,
     has_component,
     has_components,
+    move_world,
     new_entity,
     process_pending_deletions,
     remove_component,
@@ -307,3 +308,6 @@ def test_serialize(world, serializable_component_a, serializable_component_b):
     new_world = deserialize_world(json.loads(json.dumps(serialized)))
     new_serialized = serialize_world(new_world)
     assert serialized == new_serialized
+
+    empty_world = move_world(new_world, World())
+    assert serialize_world(empty_world) == new_serialized

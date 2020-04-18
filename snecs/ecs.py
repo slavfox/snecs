@@ -28,6 +28,7 @@ from types import MappingProxyType as _MappingProxy
 
 from snecs._detail import ZERO as _ZERO
 from snecs.component import _component_names
+from snecs.typedefs import EntityID as _EntityID
 from snecs.world import World as _World
 from snecs.world import default_world as _default_world
 
@@ -44,7 +45,7 @@ if TYPE_CHECKING:
         Optional,
     )
     from snecs.component import Component
-    from snecs.typedefs import EntityID, SerializedWorldType
+    from snecs.typedefs import SerializedWorldType
 
     C = TypeVar("C", bound=Component)
 
@@ -59,6 +60,7 @@ __all__ = [
     "exists",
     "has_component",
     "has_components",
+    "move_world",
     "new_entity",
     "process_pending_deletions",
     "remove_component",
@@ -71,7 +73,7 @@ __all__ = [
 
 def new_entity(
     components: "Collection[Component]" = (), world: "_World" = _default_world
-) -> "EntityID":
+) -> "_EntityID":
     """
     Create an entity in a World with the given Components, returning its ID.
 
@@ -110,7 +112,7 @@ def new_entity(
 
 
 def add_component(
-    entity_id: "EntityID",
+    entity_id: "_EntityID",
     component: "Component",
     world: "_World" = _default_world,
 ) -> "None":
@@ -163,7 +165,7 @@ def add_component(
 
 
 def add_components(
-    entity_id: "EntityID",
+    entity_id: "_EntityID",
     components: "Collection[Component]",
     world: "_World" = _default_world,
 ) -> "None":
@@ -209,7 +211,7 @@ def add_components(
 
 
 def entity_component(
-    entity_id: "EntityID",
+    entity_id: "_EntityID",
     component_type: "Type[C]",
     world: "_World" = _default_world,
 ) -> "C":
@@ -235,7 +237,7 @@ def entity_component(
 
 
 def entity_components(
-    entity_id: "EntityID",
+    entity_id: "_EntityID",
     components: "Iterable[Type[Component]]",
     world: "_World" = _default_world,
 ) -> "Dict[Type[Component], Component]":
@@ -264,7 +266,7 @@ def entity_components(
 
 
 def all_components(
-    entity_id: "EntityID", world: "_World" = _default_world
+    entity_id: "_EntityID", world: "_World" = _default_world
 ) -> "Mapping[Type[Component], Component]":
     """
     Get a mapping of all Components for a specific entity in a given World.
@@ -285,7 +287,7 @@ def all_components(
 
 
 def has_component(
-    entity_id: "EntityID",
+    entity_id: "_EntityID",
     component_type: "Type[Component]",
     world: "_World" = _default_world,
 ) -> "bool":
@@ -315,7 +317,7 @@ def has_component(
 
 
 def has_components(
-    entity_id: "EntityID",
+    entity_id: "_EntityID",
     component_types: "Iterable[Type[Component]]",
     world: "_World" = _default_world,
 ) -> "bool":
@@ -341,7 +343,7 @@ def has_components(
 
 
 def remove_component(
-    entity_id: "EntityID",
+    entity_id: "_EntityID",
     component_type: "Type[Component]",
     world: "_World" = _default_world,
 ) -> "None":
@@ -366,7 +368,7 @@ def remove_component(
 
 
 def schedule_for_deletion(
-    entity_id: "EntityID", world: "_World" = _default_world
+    entity_id: "_EntityID", world: "_World" = _default_world
 ) -> "None":
     """
     Schedule an entity for deletion from the World. Thread-safe.
@@ -410,7 +412,7 @@ def schedule_for_deletion(
     world._entities_to_delete.add(entity_id)
 
 
-def exists(entity_id: "EntityID", world: "_World") -> "bool":
+def exists(entity_id: "_EntityID", world: "_World") -> "bool":
     """
     Check whether an entity exists in this World.
 
@@ -431,7 +433,7 @@ def exists(entity_id: "EntityID", world: "_World") -> "bool":
 
 
 def delete_entity_immediately(
-    entity_id: "EntityID", world: "_World" = _default_world
+    entity_id: "_EntityID", world: "_World" = _default_world
 ) -> "None":
     """
     Delete an entity from a given `World` immediately. *Not* thread-safe.
@@ -569,6 +571,11 @@ def deserialize_world(
     are not registered when you call `deserialize_world`, or any of them
     have been renamed, this will fail and raise a ValueError.
 
+    If you want to deserialize into the default World, you'll want to call
+    `move_world` afterwards::
+
+        move_world(deserialize_world(serialized_data))
+
     :param serialized: A serialized world, as output by `serialize_world`.
     :type serialized: `SerializedWorldType`
 
@@ -586,10 +593,10 @@ def deserialize_world(
         _component_names[name] for name in serialized_names
     ]
     serialized_entities = _cast(
-        "Dict[EntityID, Dict[int, str]]", serialized[SERIALIZED_ENTITIES_KEY]
+        "Dict[_EntityID, Dict[int, str]]", serialized[SERIALIZED_ENTITIES_KEY]
     )
     for ent_id, components in serialized_entities.items():
-        ent_id = int(ent_id)
+        ent_id = _EntityID(ent_id)
         cmp_instances = [
             component_types[int(i)].deserialize(serialized)
             for i, serialized in components.items()
@@ -609,3 +616,47 @@ def deserialize_world(
         world._entity_bitmasks[ent_id] = bitmask
 
     return world
+
+
+def move_world(
+    original: "_World", target: "_World" = _default_world
+) -> "_World":
+    """
+    Move the data from a `World` into a different one, then clear the original.
+
+    This is mainly useful for replacing the default snecs World with the
+    output of `deserialize_world`.
+
+    Returns the target world, to make this pattern easier::
+
+        world = move_world(original, World())
+
+    By passing an empty World as the first argument, this method can be used to
+    clear the target World.
+
+    The original World should *not* be used after calling this function. It
+    is effectively deleted.
+
+    :param original: The `World` to move the data from.
+    :type original: `World`
+
+    :param target: The `World` to move the data into.
+    :type target: Optional[`World`]
+
+    :return: The target `World`.
+    """
+    target._entity_counter = original._entity_counter
+    target._entities = original._entities
+    target._entity_bitmasks = original._entity_bitmasks
+    target._entity_cache = original._entity_cache
+    target._entities_to_delete = original._entities_to_delete
+    original._entity_counter = _EntityID(0)
+    original._entities = {}
+    original._entity_bitmasks = {}
+    original._entity_cache = {}
+    original._entities_to_delete = set()
+
+    if original.name:
+        del _World._instances[original.name]
+
+    return target
