@@ -4,6 +4,15 @@
 Changelog
 =========
 
+v1.1.0
+======
+
+Changes/Fixes
+-------------
+
+* ``serialize_world`` and ``deserialize_world`` now use strings as the
+  dictionary keys, to permit using JSON as an interchange format.
+
 v1.0.0
 ======
 

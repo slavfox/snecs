@@ -41,4 +41,4 @@ __all__ = [
     "SerializedWorldType",
 ]
 
-SerializedWorldType = Dict[int, Any]  # type: ignore
+SerializedWorldType = Dict[str, Any]  # type: ignore

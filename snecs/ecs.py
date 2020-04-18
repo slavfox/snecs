@@ -471,9 +471,9 @@ def process_pending_deletions(world: "_World" = _default_world) -> "None":
 
 
 #: See `serialize_world`
-SERIALIZED_COMPONENTS_KEY = 0
+SERIALIZED_COMPONENTS_KEY = "C"
 #: See `serialize_world`
-SERIALIZED_ENTITIES_KEY = 1
+SERIALIZED_ENTITIES_KEY = "E"
 
 
 # This, sadly, has to have extremely loose typing until at least PyPy hits 3.8.
@@ -589,6 +589,7 @@ def deserialize_world(
         "Dict[EntityID, Dict[int, str]]", serialized[SERIALIZED_ENTITIES_KEY]
     )
     for ent_id, components in serialized_entities.items():
+        ent_id = int(ent_id)
         cmp_instances = [
             component_types[i].deserialize(serialized)
             for i, serialized in components.items()
