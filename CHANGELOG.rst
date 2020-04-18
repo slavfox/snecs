@@ -4,6 +4,14 @@
 Changelog
 =========
 
+v1.2.1
+======
+
+Changes
+-------
+
+* Don't delete the source in ``move_world``, just clear it.
+
 v1.2.0
 ======
 

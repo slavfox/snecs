@@ -634,9 +634,6 @@ def move_world(
     By passing an empty World as the first argument, this method can be used to
     clear the target World.
 
-    The original World should *not* be used after calling this function. It
-    is effectively deleted.
-
     :param original: The `World` to move the data from.
     :type original: `World`
 
@@ -655,8 +652,5 @@ def move_world(
     original._entity_bitmasks = {}
     original._entity_cache = {}
     original._entities_to_delete = set()
-
-    if original.name:
-        del _World._instances[original.name]
 
     return target
