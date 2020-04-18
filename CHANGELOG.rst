@@ -4,6 +4,14 @@
 Changelog
 =========
 
+v1.1.1
+======
+
+Fixes
+-----
+
+* Same thing as v1.1.0, but for real this time
+
 v1.1.0
 ======
 

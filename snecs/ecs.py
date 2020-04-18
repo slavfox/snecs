@@ -591,7 +591,7 @@ def deserialize_world(
     for ent_id, components in serialized_entities.items():
         ent_id = int(ent_id)
         cmp_instances = [
-            component_types[i].deserialize(serialized)
+            component_types[int(i)].deserialize(serialized)
             for i, serialized in components.items()
         ]
         if ent_id > world._entity_counter:

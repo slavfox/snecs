@@ -5,6 +5,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 from copy import copy, deepcopy
 
+import json
 import pytest
 import snecs.ecs
 from snecs.ecs import (
@@ -303,6 +304,6 @@ def test_serialize(world, serializable_component_a, serializable_component_b):
         },
     }
 
-    new_world = deserialize_world(serialized)
+    new_world = deserialize_world(json.loads(json.dumps(serialized)))
     new_serialized = serialize_world(new_world)
     assert serialized == new_serialized
