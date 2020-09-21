@@ -4,6 +4,14 @@
 Changelog
 =========
 
+v1.2.2
+======
+
+Fixes
+-----
+
+* Weird bug about set.intersection not applying to frozensets.
+
 v1.2.1
 ======
 

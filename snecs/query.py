@@ -47,7 +47,7 @@ else:
 
 __all__ = ["Query"]
 
-_EMPTY_SET: "AbstractSet[EntityID]" = frozenset()
+_EMPTY_SET: "AbstractSet[EntityID]" = set()
 
 
 class BaseQuery(Iterable["QueryRow"], ABC):

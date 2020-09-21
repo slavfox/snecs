@@ -140,7 +140,8 @@ def test_add_existing_component_error(
     ca = component_a()
     cb = component_b()
     with pytest.raises(
-        ValueError, match=f"duplicate components.*{component_a.__name__}",
+        ValueError,
+        match=f"duplicate components.*{component_a.__name__}",
     ):
         add_components(empty_entity, (ca, cb), world=world)
     assert world._entities[empty_entity][component_a] == c
@@ -154,7 +155,8 @@ def test_add_duplicate_components_error(world, empty_entity, component_a):
     c1 = component_a()
     c2 = component_a()
     with pytest.raises(
-        ValueError, match=f"duplicate components.*{component_a.__name__}",
+        ValueError,
+        match=f"duplicate components.*{component_a.__name__}",
     ):
         add_components(empty_entity, (c1, c2), world=world)
     assert world._entities[empty_entity] == {}
