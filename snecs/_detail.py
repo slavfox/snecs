@@ -18,7 +18,7 @@ __all__ = ["InvariantDict", "Bitmask", "ZERO"]
 
 
 if TYPE_CHECKING:
-    from typing import Iterable, NoReturn, Iterator, Optional
+    from typing import Iterable, Iterator, NoReturn, Optional
 
     class _Dict:
         """Dict, but ignored by mypy."""

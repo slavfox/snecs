@@ -13,7 +13,8 @@ from snecs._detail import Bitmask, InvariantDict
 from snecs._filters import AndExpr, Expr, NotExpr, OrExpr
 
 if TYPE_CHECKING:
-    from typing import Type, Any, Dict, TypeVar
+    from typing import Any, Dict, Type, TypeVar
+
     from snecs._filters import Term
 
     CType = TypeVar("CType", bound="Component")
