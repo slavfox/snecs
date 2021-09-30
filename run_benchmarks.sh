@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-PYTHONOPTIMIZE=true pytest \
+python -O -m pytest \
   --benchmark-enable \
   --benchmark-only \
   --benchmark-save-data \
