@@ -23,7 +23,7 @@ include = ["README.rst", "CHANGELOG.rst", "LICENSE"]
 python = "^3.6"
 
 [tool.poetry.dev-dependencies]
-mypy = {version = "^0.761", markers = "platform_python_implementation == 'cpython'"}
+mypy = {version = "~0.910", markers = "platform_python_implementation == 'CPython'"}
 flake8 = "^3.7.9"
 flake8-typing-imports = "^1.5.1"
 isort = {version = "^4.3.21", extras = ["pyproject"]}
@@ -33,16 +33,13 @@ bump2version = "^1.0.0"
 pre-commit = "^2.1.1"
 flake8-docstrings = "^1.5.0"
 pytest = "^5.3.5"
-black = {version = "^19.10b0", markers = "platform_python_implementation == 'cpython'"}
-# Change pylint to upstream when https://github.com/PyCQA/pylint/pull/3446 gets
-# released, and remove explicit astroid dependency
-astroid = { git = "https://github.com/PyCQA/astroid.git", rev = "ab9d147"}
-pylint = { git = "https://github.com/slavfox/pylint.git", branch = "W0223-narrowing"}
-sphinx = { git = "https://github.com/sphinx-doc/sphinx.git", branch = "3.x"}
+black = {version = "^19.10b0", markers = "platform_python_implementation == 'CPython'"}
+pylint = {version = "^2.11.1"}
+sphinx = {version = "^3.5.4"}
 pytest-cov = "^2.8.1"
 # Necessary for flake8 pylint plugin, but we use flake8 in `make lint`
 # because of https://github.com/life4/flakehell/issues/34
-flakehell = "^0.3.3"
+flakehell = "^0.9.0"
 flake8-colors = "^0.1.6"
 # For benchmarks
 pytest-benchmark = {version = "^3.2.3", extras = ["histogram"]}
