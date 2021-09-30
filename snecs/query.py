@@ -14,19 +14,20 @@ from snecs.world import default_world
 
 if TYPE_CHECKING:
     from typing import (
-        Any,
-        Tuple,
-        Optional,
-        Type,
-        List,
-        TypeVar,
         AbstractSet,
+        Any,
         Collection,
+        List,
+        Optional,
+        Tuple,
+        Type,
+        TypeVar,
     )
+
+    from snecs._filters import CompiledFilter, Term
     from snecs.component import Component
-    from snecs.world import World
     from snecs.typedefs import EntityID
-    from snecs._filters import Term, CompiledFilter
+    from snecs.world import World
 
     QueryRow = Tuple[EntityID, List[Component]]
     QueryIterator = Iterator[QueryRow]

@@ -34,16 +34,17 @@ from snecs.world import default_world as _default_world
 
 if TYPE_CHECKING:
     from typing import (
-        Type,
-        Iterable,
-        Collection,
-        TypeVar,
-        Mapping,
-        Dict,
         Any,
+        Collection,
+        Dict,
+        Iterable,
         List,
+        Mapping,
         Optional,
+        Type,
+        TypeVar,
     )
+
     from snecs.component import Component
     from snecs.typedefs import SerializedWorldType
 

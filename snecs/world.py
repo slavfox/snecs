@@ -11,7 +11,8 @@ from typing import TYPE_CHECKING, cast
 from snecs.component import Component
 
 if TYPE_CHECKING:
-    from typing import Type, Set, Dict, Optional
+    from typing import Dict, Optional, Set, Type
+
     from snecs._detail import Bitmask
     from snecs.typedefs import EntityID
 

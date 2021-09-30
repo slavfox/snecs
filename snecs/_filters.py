@@ -12,13 +12,13 @@ from snecs._detail import ZERO, Bitmask
 
 if TYPE_CHECKING:
     from typing import (
-        Tuple,
-        Sequence,
         ClassVar,
-        TypeVar,
         List,
-        Union,
         NoReturn,
+        Sequence,
+        Tuple,
+        TypeVar,
+        Union,
     )
 
     from snecs.component import ComponentMeta
