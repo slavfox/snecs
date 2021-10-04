@@ -3,13 +3,19 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-from snecs.component import RegisteredComponent
-from snecs.ecs import has_component, new_entity
+from typing import Tuple, Type
+
+from snecs.component import Component
+from snecs.ecs import has_component
 from snecs.query import Query
 from snecs.world import World
 
+QuerySetup = Tuple[
+    World, Tuple[Type[Component], Type[Component], Type[Component]]
+]
 
-def test_query(query_setup):
+
+def test_query(query_setup: QuerySetup) -> None:
     world, (cmp1, cmp2, cmp3) = query_setup
 
     results = []
@@ -20,18 +26,18 @@ def test_query(query_setup):
     assert results
 
 
-def test_query_empty(query_setup):
+def test_query_empty(query_setup: QuerySetup) -> None:
     world, _ = query_setup
     assert list(Query([], world=world)) == []
 
 
-def test_query_empty_compile(query_setup):
+def test_query_empty_compile(query_setup: QuerySetup) -> None:
     world, _ = query_setup
     q = Query([], world=world).compile()
     assert list(q) == []
 
 
-def test_query_filter(query_setup):
+def test_query_filter(query_setup: QuerySetup) -> None:
     world, (cmp1, cmp2, cmp3) = query_setup
 
     results = []
@@ -43,7 +49,7 @@ def test_query_filter(query_setup):
     assert results
 
 
-def test_query_compile(query_setup):
+def test_query_compile(query_setup: QuerySetup) -> None:
     world, (cmp1, cmp2, cmp3) = query_setup
 
     results = []
@@ -55,7 +61,7 @@ def test_query_compile(query_setup):
     assert results
 
 
-def test_query_filter_compile(query_setup):
+def test_query_filter_compile(query_setup: QuerySetup) -> None:
     world, (cmp1, cmp2, cmp3) = query_setup
 
     results = []

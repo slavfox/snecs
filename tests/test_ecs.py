@@ -14,7 +14,6 @@ from snecs.ecs import (
     add_component,
     add_components,
     all_components,
-    delete_entity_immediately,
     deserialize_world,
     entity_component,
     entity_components,
@@ -29,7 +28,7 @@ from snecs.ecs import (
     serialize_world,
 )
 from snecs.typedefs import EntityID
-from snecs.world import World, default_world
+from snecs.world import World
 
 
 def test_dunder_all(missing_dunder_all_names):

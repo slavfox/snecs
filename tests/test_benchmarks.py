@@ -8,8 +8,6 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-from collections import defaultdict
-
 import pytest
 from esper import World as EsperWorld
 from snecs.component import RegisteredComponent
@@ -50,13 +48,13 @@ class EsperComponentC:
     pass
 
 
-@pytest.fixture
-def esper_world():
-    return EsperWorld()
+@pytest.fixture  # type: ignore[misc]
+def esper_world() -> EsperWorld:
+    return EsperWorld()  # type: ignore[no-untyped-call]
 
 
-@pytest.fixture
-def snecs_world():
+@pytest.fixture  # type: ignore[misc]
+def snecs_world() -> SnecsWorld:
     return SnecsWorld()
 
 
