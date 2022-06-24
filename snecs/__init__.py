@@ -27,7 +27,7 @@ from snecs.ecs import (
     schedule_for_deletion,
     serialize_world,
 )
-from snecs.query import Query
+from snecs.query import Query, CompiledQuery
 from snecs.world import World
 
 __all__ = [
@@ -52,6 +52,7 @@ __all__ = [
     "deserialize_world",
     "exists",
     "Query",
+    "CompiledQuery",
 ]
 
 __version_info__ = ("1", "2", "2")
