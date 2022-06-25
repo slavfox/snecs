@@ -4,13 +4,15 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import re
-from typing import Type
+from typing import TYPE_CHECKING, Set, Tuple, Type
 from types import new_class
 
 import pytest
 from snecs._detail import Bitmask
 from snecs._filters import (
     AndExpr,
+    DynExpr,
+    Expr,
     FalseExpr,
     NotExpr,
     OrExpr,
@@ -20,10 +22,13 @@ from snecs._filters import (
 )
 from snecs.component import Component
 
+if TYPE_CHECKING:
+    from snecs._filters import Term
 
-def make_component_class(name, bitmask) -> Type[Component]:
-    cls = new_class(name, (Component,))
-    cls._bitmask = bitmask
+
+def make_component_class(name: str, bitmask: int) -> Type[Component]:
+    cls = new_class(name, (Component,))  # type: Type[Component]
+    cls._bitmask = Bitmask(bitmask)
     return cls
 
 
@@ -50,7 +55,11 @@ D = make_component_class("D", 0b_0000_1000)
         (~A, NotExpr, (A,)),
     ],
 )
-def test_expression_builder_simple(expr, expected_type, expected_terms):
+def test_expression_builder_simple(
+    expr: DynExpr,
+    expected_type: "Type[Term]",
+    expected_terms: "Tuple[Term, ...]",
+) -> None:
     assert isinstance(expr, expected_type)
     assert expr.terms == expected_terms
 
@@ -86,7 +95,9 @@ def test_expression_builder_simple(expr, expected_type, expected_terms):
         (~(A | B), AndExpr(NotExpr(A), NotExpr(B))),
     ],
 )
-def test_complex_expression_builder(expr, expected_terms):
+def test_complex_expression_builder(
+    expr: "Term", expected_terms: "Tuple[Term, ...]"
+) -> None:
     assert expr == expected_terms
 
 
@@ -146,7 +157,7 @@ def test_complex_expression_builder(expr, expected_terms):
         ((A | B) & (~A | C), 0b_0000_0111, True),
     ],
 )
-def test_matching(expr, bitmask, should_match):
+def test_matching(expr: "Term", bitmask: Bitmask, should_match: bool) -> None:
     assert matches(expr, bitmask) == should_match
     match = compile_filter(expr)
     assert match.matches(bitmask) == should_match
@@ -171,7 +182,7 @@ def test_matching(expr, bitmask, should_match):
         ((A & ~B) | (~A & B), {"01", "10"}),
     ],
 )
-def test_clauses(expr, clauses):
+def test_clauses(expr: Expr, clauses: Set[str]) -> None:
     matcher = expr._make_compiler()
     assert set(matcher._pretty_clauses()) == clauses
     compiled = matcher.compile()
@@ -179,9 +190,9 @@ def test_clauses(expr, clauses):
         assert not compiled.matches(Bitmask(1))
         assert not compiled.matches(Bitmask(0))
     else:
-        l = len(next(iter(clauses)))
-        for i in range(1 << l):
-            i_str = f"{i:b}".zfill(l)
+        length = len(next(iter(clauses)))
+        for i in range(1 << length):
+            i_str = f"{i:b}".zfill(length)
             should_match = any(re.match(clause, i_str) for clause in clauses)
 
             assert compiled.matches(Bitmask(i)) == should_match
@@ -191,7 +202,7 @@ def test_clauses(expr, clauses):
     "expr, s",
     [
         (~A, "CompiledFilter[~A]"),
-        (A & ~A, "CompiledFilter[A & (~A)]"),
+        (A & ~A, "CompiledFilter[false]"),
         (A & B, "CompiledFilter[A & B]"),
         (A & B & C, "CompiledFilter[A & B & C]"),
         (A | B, "CompiledFilter[A | B]"),
@@ -206,7 +217,7 @@ def test_clauses(expr, clauses):
         ((A & ~B) | (~A & B), "CompiledFilter[(A & (~B)) | ((~A) & B)]"),
     ],
 )
-def test_filter_str(expr, s):
+def test_filter_str(expr: "Term", s: str) -> None:
     assert str(compile_filter(expr)) == s
 
 
@@ -231,11 +242,11 @@ def test_filter_str(expr, s):
         ((A & ~B) | (~A & B), "(A & (~B)) | ((~A) & B)"),
     ],
 )
-def test_filter_str(expr, s):
+def test_expr_str(expr: "Term", s: str) -> None:
     assert str(expr) == s
 
 
-def test_true_expr():
+def test_true_expr() -> None:
     expr = A | ~A
     assert expr is TrueExpr
     assert expr == B | ~B
@@ -243,10 +254,10 @@ def test_true_expr():
     assert ~expr is FalseExpr
     assert expr | B == expr
     assert expr & B == B
-    assert expr != True
+    assert expr != True  # noqa: E712
 
 
-def test_false_expr():
+def test_false_expr() -> None:
     expr = A & ~A
     assert expr is FalseExpr
     assert expr == B & ~B
