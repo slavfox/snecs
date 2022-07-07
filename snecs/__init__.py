@@ -9,6 +9,7 @@ snecs - a straightforward, nimble ECS for Python.
 snecs is a pure Python 3.6+, dependency-free ECS library, heavily inspired by
 Rust’s Legion, and aiming to be as fast and easy-to-use as possible.
 """
+from snecs.bound_world import BoundWorld
 from snecs.component import Component, RegisteredComponent, register_component
 from snecs.ecs import (
     add_component,
@@ -32,6 +33,7 @@ from snecs.world import World
 
 __all__ = [
     "World",
+    "BoundWorld",
     "Component",
     "RegisteredComponent",
     "register_component",
